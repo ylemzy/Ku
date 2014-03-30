@@ -14,6 +14,7 @@
     <ProjectGuid>{E5CB2154-64B0-428E-9C61-06DFAB580D65}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>KUInterface</RootNamespace>
+    <ProjectName>kinect_unity</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
