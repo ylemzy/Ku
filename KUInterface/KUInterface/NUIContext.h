@@ -15,8 +15,9 @@
 
 enum RUNTIME_RESULT
 {
-	SUCCEEDED_FALSE = 1,
-	SUCCEEDED_OK = 0,
+	
+	SUCCEEDED_OK = 1,
+	SUCCEEDED_FALSE = 0,
 
 	CREATE_SENSOR_ERROR = -1,
 	SENSOR_INITIALIZE_ERROR = -2,
@@ -87,22 +88,23 @@ public:
 	~NuiContext();
 
 public:
-	HRESULT			Nui_Init();
+	HRESULT					Nui_Init(RUNTIME_RESULT* rtHr = 0);
 	void                    Nui_UnInit();
 	void                    Nui_Zero();
 	void					TransformCoordinates(OUT KUVector4* skTrans);
-	HRESULT					ProcessSkeleton();
-	HRESULT					ProcessColor();
-	HRESULT					ProcessDepth();
+	HRESULT					ProcessSkeleton(RUNTIME_RESULT* rtHr = 0);
+	HRESULT					ProcessColor(RUNTIME_RESULT* rtHr = 0);
+	HRESULT					ProcessDepth(RUNTIME_RESULT* rtHr = 0);
+	HRESULT					CreateBackgroundRemovedColorStream(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					SetCameraAngle(long angle);
-	HRESULT					ProcessBackgroundRemoved();
+	HRESULT					ProcessBackgroundRemoved(RUNTIME_RESULT* rtHr = 0);
 	
 	BOOL					IsBackgroundRemovedEnabled() const;
-	HRESULT					CreateBackgroundRemovedColorStream();
+	
 
 public:
-	NUI_SKELETON_DATA		skData;
-	NUI_SKELETON_DATA		skData2;
+	NUI_SKELETON_DATA		m_skData;
+	NUI_SKELETON_DATA		m_skData2;
 	LONG					angle;
 	HRESULT					skelValid;
 	HRESULT					imageValid;
@@ -110,11 +112,11 @@ public:
 	HRESULT					backgroundRemovedValid;
 	bool					twoPlayer;
 
-	byte*					texture;
+	byte*					m_pTexture;
 	int						tsize;
-	byte*					depthData;
+	byte*					m_pDepthData;
 	int						dsize;
-	const byte*				backgroundRemovedTexture;
+	const byte*				m_pBackgroundRemovedTexture;
 	int						backgroundRemovedSize;
 
 	BOOL					m_bNearMode;

@@ -40,19 +40,24 @@ private:
 NuiContext* ContextOwner::m_pNuiContext = NULL;
 
 //Initializes NUI Context
-int NuiContextInit(bool twoPlayer) 
+HRESULT NuiContextInit(bool twoPlayer) 
 {
-	return ContextOwner::Instance()->Nui_Init();
+	RUNTIME_RESULT hr = SUCCEEDED_OK;
+	ContextOwner::Instance()->Nui_Init(&hr);
+	return hr;
 }
 
 
 //Updates Skeleton, Image Data
-void NuiUpdate() 
+HRESULT NuiUpdate() 
 {
+RUNTIME_RESULT rtHr = SUCCEEDED_OK;
+	HRESULT hr = S_OK;
 	ContextOwner::Instance()->skelValid = ContextOwner::Instance()->ProcessSkeleton();
 	ContextOwner::Instance()->imageValid = ContextOwner::Instance()->ProcessColor();
 	ContextOwner::Instance()->depthValid = ContextOwner::Instance()->ProcessDepth();
 	ContextOwner::Instance()->backgroundRemovedValid = ContextOwner::Instance()->ProcessBackgroundRemoved();
+	return rtHr;
 }
 
 
@@ -74,10 +79,10 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 
 	if (player == 1) {
 		if(SUCCEEDED(ContextOwner::Instance()->skelValid)) {
-			skTrans.x = ContextOwner::Instance()->skData.SkeletonPositions[joint].x;
-			skTrans.y = ContextOwner::Instance()->skData.SkeletonPositions[joint].y;
-			skTrans.z = ContextOwner::Instance()->skData.SkeletonPositions[joint].z;
-			skTrans.w = ContextOwner::Instance()->skData.SkeletonPositions[joint].w;
+			skTrans.x = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].x;
+			skTrans.y = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].y;
+			skTrans.z = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].z;
+			skTrans.w = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].w;
 		} else {
 			skTrans.x = 0.0f;
 			skTrans.y = 0.0f;
@@ -86,10 +91,10 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 		}
 	} else if (player == 2) {
 		if(SUCCEEDED(ContextOwner::Instance()->skelValid)) {
-			skTrans.x = ContextOwner::Instance()->skData2.SkeletonPositions[joint].x;
-			skTrans.y = ContextOwner::Instance()->skData2.SkeletonPositions[joint].y;
-			skTrans.z = ContextOwner::Instance()->skData2.SkeletonPositions[joint].z;
-			skTrans.w = ContextOwner::Instance()->skData2.SkeletonPositions[joint].w;
+			skTrans.x = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].x;
+			skTrans.y = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].y;
+			skTrans.z = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].z;
+			skTrans.w = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].w;
 		} else {
 			skTrans.x = 0.0f;
 			skTrans.y = 0.0f;
@@ -111,7 +116,7 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 byte* GetTextureImage(OUT int* size) {
 
 	*size = ContextOwner::Instance()->tsize;
-	return ContextOwner::Instance()->texture;
+	return ContextOwner::Instance()->m_pTexture;
 }
 
 
@@ -119,7 +124,7 @@ byte* GetTextureImage(OUT int* size) {
 byte* GetDepthImage(OUT int* size) 
 {
 	*size = ContextOwner::Instance()->dsize;
-	return ContextOwner::Instance()->depthData;
+	return ContextOwner::Instance()->m_pDepthData;
 }
 
 
@@ -133,7 +138,7 @@ void GetCameraAngle(OUT float* angle) {
 const byte* GetBackgroundRemovedImage(OUT int* size)
 {
 	*size = ContextOwner::Instance()->backgroundRemovedSize;
-	return ContextOwner::Instance()->backgroundRemovedTexture;
+	return ContextOwner::Instance()->m_pBackgroundRemovedTexture;
 }
 
 

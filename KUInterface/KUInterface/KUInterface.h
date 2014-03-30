@@ -17,8 +17,8 @@
 //DEFINE INTERFACE METHODS
 
 //Nui Context Management
-UNITYINTERFACE_API int NuiContextInit(bool twoPlayer);
-UNITYINTERFACE_API void NuiUpdate();
+UNITYINTERFACE_API HRESULT NuiContextInit(bool twoPlayer);
+UNITYINTERFACE_API HRESULT NuiUpdate();
 UNITYINTERFACE_API void NuiContextUnInit();
 //Get Methods
 UNITYINTERFACE_API void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransform);
