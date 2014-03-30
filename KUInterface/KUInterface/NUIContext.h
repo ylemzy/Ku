@@ -106,7 +106,7 @@ public:
 	NUI_SKELETON_DATA		m_skData;
 	NUI_SKELETON_DATA		m_skData2;
 	LONG					angle;
-	HRESULT					skelValid;
+	HRESULT					skeletonValid;
 	HRESULT					imageValid;
 	HRESULT					depthValid;
 	HRESULT					backgroundRemovedValid;

@@ -51,13 +51,30 @@ HRESULT NuiContextInit(bool twoPlayer)
 //Updates Skeleton, Image Data
 HRESULT NuiUpdate() 
 {
-RUNTIME_RESULT rtHr = SUCCEEDED_OK;
-	HRESULT hr = S_OK;
-	ContextOwner::Instance()->skelValid = ContextOwner::Instance()->ProcessSkeleton();
-	ContextOwner::Instance()->imageValid = ContextOwner::Instance()->ProcessColor();
-	ContextOwner::Instance()->depthValid = ContextOwner::Instance()->ProcessDepth();
-	ContextOwner::Instance()->backgroundRemovedValid = ContextOwner::Instance()->ProcessBackgroundRemoved();
-	return rtHr;
+	RUNTIME_RESULT rtColor = SUCCEEDED_OK, rtDepth = SUCCEEDED_OK, rtSk = SUCCEEDED_OK, rtBg = SUCCEEDED_OK;
+	HRESULT hrColor = S_OK, hrDepth = S_OK, hrSk = S_OK, hrBg = S_OK;
+	
+	hrColor = ContextOwner::Instance()->imageValid = ContextOwner::Instance()->ProcessColor(&rtColor);
+
+	hrDepth = ContextOwner::Instance()->depthValid = ContextOwner::Instance()->ProcessDepth(&rtDepth);
+
+	if (SUCCEEDED(hrDepth))
+		hrSk = ContextOwner::Instance()->skeletonValid = ContextOwner::Instance()->ProcessSkeleton(&rtSk);
+	
+	if (SUCCEEDED(hrDepth))
+		hrBg = ContextOwner::Instance()->backgroundRemovedValid = ContextOwner::Instance()->ProcessBackgroundRemoved(&rtBg);
+
+	//按顺序优先判断，骨架以及背景去除依赖于深度
+	if (FAILED(hrColor))
+		return rtColor;
+	else if (FAILED(hrDepth))
+		return rtDepth;
+	else if (FAILED(hrSk))
+		return rtSk;
+	else if (FAILED(hrBg))
+		return rtBg;
+	
+	return SUCCEEDED_OK;
 }
 
 
@@ -78,7 +95,7 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 	KUVector4 &skTrans = *SkeletonTransform;
 
 	if (player == 1) {
-		if(SUCCEEDED(ContextOwner::Instance()->skelValid)) {
+		if(SUCCEEDED(ContextOwner::Instance()->skeletonValid)) {
 			skTrans.x = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].x;
 			skTrans.y = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].y;
 			skTrans.z = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].z;
@@ -90,7 +107,7 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 			skTrans.w = 0.0f;
 		}
 	} else if (player == 2) {
-		if(SUCCEEDED(ContextOwner::Instance()->skelValid)) {
+		if(SUCCEEDED(ContextOwner::Instance()->skeletonValid)) {
 			skTrans.x = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].x;
 			skTrans.y = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].y;
 			skTrans.z = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].z;
