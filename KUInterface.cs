@@ -38,6 +38,10 @@ public class KUInterface : MonoBehaviour {
     /// </summary>
     public bool useDepth = true;
     /// <summary>
+    /// set to false to optimize performance if background Removed is not being used
+    /// </summary>
+    public bool useBackgroundRemoved = true;
+    /// <summary>
     /// displays joint position data on screen
     /// </summary>
     public bool displayJointInformation = false;
@@ -60,10 +64,17 @@ public class KUInterface : MonoBehaviour {
     private byte[] seqTex;
     private Color32[] cols;
     private Texture2D texture;
+
     private byte[] seqDepth;
     private Color32[] dcols;
     private Texture2D depthImg;
+
+    private byte[] seqBackgroundRemoved;
+    private Color32[] backgroundRemovedColor;
+    private Texture2D backgroundRemovedImg;
+
     private short[][] depth;
+    
 
 
 /********************************************************************************
@@ -187,10 +198,16 @@ public class KUInterface : MonoBehaviour {
         seqDepth = new byte[IM_W * IM_H * 2];
         dcols = new Color32[IM_W * IM_H];
         depthImg = new Texture2D(IM_W, IM_H);
+
+        seqBackgroundRemoved = new byte[IM_W * IM_H * 4];
+        backgroundRemovedColor = new Color32[IM_W * IM_H];
+        texture = new Texture2D(IM_W, IM_H);
+
         depth = new short[IM_W][];
         for (int i = 0; i < depth.Length; i++) {
             depth[i] = new short[IM_H];
         }
+
     }
 
 
@@ -218,6 +235,9 @@ public class KUInterface : MonoBehaviour {
             //update Depth data
             if (useDepth)
                 UpdateDepth();
+
+            if (useBackgroundRemoved)
+                UpdateBackgroundRemoved();
         }
     }
 
@@ -285,6 +305,24 @@ public class KUInterface : MonoBehaviour {
                 depthImg.Apply();
             }
         }
+    }
+
+    private void UpdateBackgroundRemoved()
+    {
+        int size = 0;
+        IntPtr ptr = KinectWrapper.GetBackgroundRemovedImage(ref size);
+        if (ptr == IntPtr.Zero)
+            return;
+
+        Marshal.Copy(ptr, seqBackgroundRemoved, 0, size);
+        //create color matrix
+        for (int i = 0; i < (IM_W * IM_H * 4); i += 4)
+        {
+            backgroundRemovedColor[(IM_W * IM_H) - (i / 4) - 1] = new Color32(
+                seqBackgroundRemoved[i + 2], seqBackgroundRemoved[i + 1], seqBackgroundRemoved[i], 255);
+        }
+        backgroundRemovedImg.SetPixels32(backgroundRemovedColor);
+        backgroundRemovedImg.Apply();
     }
 
 
@@ -385,8 +423,12 @@ public class KinectWrapper {
     [DllImport("/Assets/Plugins/KUInterface.dll")]
     public static extern IntPtr GetDepthImage(ref int size);
     [DllImport("/Assets/Plugins/KUInterface.dll")]
+    public static extern IntPtr GetBackgroundRemovedImage(ref int size);
+    [DllImport("/Assets/Plugins/KUInterface.dll")]
     public static extern void GetCameraAngle(ref float angle);
     //Set Methods
     [DllImport("/Assets/Plugins/KUInterface.dll")]
     public static extern bool SetCameraAngle(int angle);
+    [DllImport("/Assets/Plugins/KUInterface.dll")]
+    public static extern bool SetBackgroundRemoved(bool bEnabled);
 }

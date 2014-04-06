@@ -1,9 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KUInterface", "KUInterface\KUInterface.vcxproj", "{E5CB2154-64B0-428E-9C61-06DFAB580D65}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRun", "TestRun\TestRun.vcxproj", "{4FCFEF6C-12F4-46E6-979C-035CD890AF2C}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E5CB2154-64B0-428E-9C61-06DFAB580D65} = {E5CB2154-64B0-428E-9C61-06DFAB580D65}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "kinect_unity", "KUInterface\Kinect_unity.vcxproj", "{E5CB2154-64B0-428E-9C61-06DFAB580D65}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "NewTest", "NewTest\NewTest.vcxproj", "{C0FF1197-1CD2-4A62-94EE-C42F3C2C126D}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConsoleTest", "ConsoleTest\ConsoleTest.vcxproj", "{B33BDCD1-99C1-4A99-90AA-0A8049B2B688}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InteractionTest", "InteractionTest\InteractionTest.vcxproj", "{D1C769C8-7A79-4F72-94E8-D72602E14610}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,14 +20,26 @@ Global
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Debug|Win32.ActiveCfg = Debug|Win32
-		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Debug|Win32.Build.0 = Debug|Win32
-		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Release|Win32.ActiveCfg = Release|Win32
-		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Release|Win32.Build.0 = Release|Win32
 		{4FCFEF6C-12F4-46E6-979C-035CD890AF2C}.Debug|Win32.ActiveCfg = Debug|Win32
 		{4FCFEF6C-12F4-46E6-979C-035CD890AF2C}.Debug|Win32.Build.0 = Debug|Win32
 		{4FCFEF6C-12F4-46E6-979C-035CD890AF2C}.Release|Win32.ActiveCfg = Release|Win32
 		{4FCFEF6C-12F4-46E6-979C-035CD890AF2C}.Release|Win32.Build.0 = Release|Win32
+		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Debug|Win32.Build.0 = Debug|Win32
+		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Release|Win32.ActiveCfg = Release|Win32
+		{E5CB2154-64B0-428E-9C61-06DFAB580D65}.Release|Win32.Build.0 = Release|Win32
+		{C0FF1197-1CD2-4A62-94EE-C42F3C2C126D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{C0FF1197-1CD2-4A62-94EE-C42F3C2C126D}.Debug|Win32.Build.0 = Debug|Win32
+		{C0FF1197-1CD2-4A62-94EE-C42F3C2C126D}.Release|Win32.ActiveCfg = Release|Win32
+		{C0FF1197-1CD2-4A62-94EE-C42F3C2C126D}.Release|Win32.Build.0 = Release|Win32
+		{B33BDCD1-99C1-4A99-90AA-0A8049B2B688}.Debug|Win32.ActiveCfg = Debug|Win32
+		{B33BDCD1-99C1-4A99-90AA-0A8049B2B688}.Debug|Win32.Build.0 = Debug|Win32
+		{B33BDCD1-99C1-4A99-90AA-0A8049B2B688}.Release|Win32.ActiveCfg = Release|Win32
+		{B33BDCD1-99C1-4A99-90AA-0A8049B2B688}.Release|Win32.Build.0 = Release|Win32
+		{D1C769C8-7A79-4F72-94E8-D72602E14610}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D1C769C8-7A79-4F72-94E8-D72602E14610}.Debug|Win32.Build.0 = Debug|Win32
+		{D1C769C8-7A79-4F72-94E8-D72602E14610}.Release|Win32.ActiveCfg = Release|Win32
+		{D1C769C8-7A79-4F72-94E8-D72602E14610}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
