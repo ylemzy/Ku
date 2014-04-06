@@ -1,9 +1,3 @@
-/************************************************************************
-*						   NUI Context Methods							*
-*																		*
-*						  Author: Andrew DeVine							*
-*								  2013									*
-************************************************************************/
 
 #include "stdafx.h"
 #include "NuiContext.h"
@@ -39,13 +33,10 @@ SensorContext::SensorContext()
 	, m_pImageData(NULL)
 	, m_pDepthData(NULL)
 	, m_pBackgroundRemovedData(NULL)
-	, m_lastHandtrackedId(NUI_SKELETON_INVALID_TRACKING_ID)
-	, m_lastLeftEventType(NUI_HAND_EVENT_TYPE_NONE)
-	, m_lastRightEventType(NUI_HAND_EVENT_TYPE_NONE)
 {
 	memset(&m_skData, 0, sizeof(NUI_SKELETON_DATA));
 	memset(&m_skData2, 0, sizeof(NUI_SKELETON_DATA));
-	memset(&m_userInfo, 0, sizeof(NUI_USER_INFO));
+	memset(&m_mainUserInfo, 0, sizeof(NUI_USER_INFO));
 	DWORD width = 0;
 	DWORD height = 0;
 	NuiImageResolutionToSize(cColorResolution, width, height);
@@ -609,18 +600,17 @@ HRESULT SensorContext::ProcessBackgroundRemoved(RUNTIME_RESULT *rtHr)
 	return hr;
 }
 
-HRESULT SensorContext::CaseLeftHand(
-	int skeletonId, 
+HRESULT SensorContext::PickHandEventType(
 	const NUI_HANDPOINTER_INFO* pHandPointerInfo, 
 	NUI_HAND_EVENT_TYPE lastEventType /*= NUI_HAND_EVENT_TYPE_NONE*/, 
 	NUI_HAND_EVENT_TYPE* pEventType /*= 0*/) const
 {
+	/*
+	NUI_HAND_EVENT_TYPE_NONE // No change from last event, or an undefined change.
+	所以需要对考虑last event状态
+	*/
 	if (!pHandPointerInfo)
 		return E_INVALIDARG;
-
-	if (NUI_SKELETON_INVALID_TRACKING_ID == skeletonId 
-		|| pHandPointerInfo->HandType != NUI_HAND_TYPE_LEFT)
-		return S_FALSE;
 
 	if (!pEventType)
 		return S_OK;
@@ -639,52 +629,7 @@ HRESULT SensorContext::CaseLeftHand(
 			*pEventType = lastEventType;
 	}
 	
-	DebugHandStateMsg(NUI_HAND_TYPE_LEFT, state);
-	return S_OK;
-}
-
-
-HRESULT SensorContext::CaseRightHand(int skeletonId, 
-	const NUI_HANDPOINTER_INFO* pHandPointerInfo, 
-	NUI_HAND_EVENT_TYPE lastEventType /*= NUI_HAND_EVENT_TYPE_NONE*/, 
-	NUI_HAND_EVENT_TYPE* pEventType /*= 0*/) const
-{
-	if (!pHandPointerInfo)
-		return E_INVALIDARG;
-
-	if (NUI_SKELETON_INVALID_TRACKING_ID == skeletonId 
-		|| pHandPointerInfo->HandType != NUI_HAND_TYPE_RIGHT)
-		return S_FALSE;
-
-	if (!pEventType)
-		return S_OK;
-
-	DWORD state = pHandPointerInfo->State;
-	if (EXIST_FLAG(state, NUI_HANDPOINTER_STATE_NOT_TRACKED) 
-		|| NO_EXIST_FLAG(state, NUI_HANDPOINTER_STATE_ACTIVE))
-	{
-		*pEventType = NUI_HAND_EVENT_TYPE_NONE;
-	}
-	else
-	{
-		*pEventType = pHandPointerInfo->HandEventType;
-		if (NUI_HAND_EVENT_TYPE_NONE == *pEventType)
-			*pEventType = lastEventType;
-	}
-
-	DebugHandStateMsg(NUI_HAND_TYPE_RIGHT, state);
-	return S_OK;
-}
-
-HRESULT SensorContext::CaseNoneHand(int skeletonId, const NUI_HANDPOINTER_INFO* pHandPointerInfo) const
-{
-	if (!pHandPointerInfo)
-		return E_INVALIDARG;
-
-	if (NUI_SKELETON_INVALID_TRACKING_ID == skeletonId 
-		|| pHandPointerInfo->HandType != NUI_HAND_TYPE_NONE)
-		return S_FALSE;
-	//....
+	DebugHandStateMsg(pHandPointerInfo->HandType, state);
 	return S_OK;
 }
 
@@ -706,80 +651,72 @@ HRESULT SensorContext::ProcessInteraction(RUNTIME_RESULT* rtHr /*= 0*/)
 		CHECK_RUTURN_WITH_RUNTIMERESULT(hr, rtHr, GET_INTERACTION_FRAME_ERROR);
 	}
 
-	m_userInfo = iaFrame.UserInfos[0];
-
-	NUI_USER_INFO info = {0 };
-	bool bTrackedValid = false;
+	
 	printf("new frame data--------------------------------------------\n");
 	int candidateId = NUI_SKELETON_INVALID_TRACKING_ID;
+	bool bMainUserUpdated = false;
 	for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
 	{
-		info = iaFrame.UserInfos[i];
-		if (NUI_SKELETON_INVALID_TRACKING_ID == info.SkeletonTrackingId)
+		const NUI_USER_INFO* pUserInfo = iaFrame.UserInfos + i;
+		if (NUI_SKELETON_INVALID_TRACKING_ID == pUserInfo->SkeletonTrackingId)
 			continue;
 
-		candidateId = info.SkeletonTrackingId;
-		if (m_lastHandtrackedId == info.SkeletonTrackingId)
+		candidateId = i;
+		printf("-----interaction skeleton %d with id %d------------\n", i, pUserInfo->SkeletonTrackingId);
+		if (pUserInfo->SkeletonTrackingId == m_mainUserInfo.SkeletonTrackingId)
 		{
-			bTrackedValid = true;
-		}
-
-		printf("-----interaction skeleton %d with id %d------------\n", i, info.SkeletonTrackingId);
-		NUI_HAND_EVENT_TYPE lastLeft, lastRight;
-		for (int j = 0; j < NUI_USER_HANDPOINTER_COUNT; ++j)
-		{
-			NUI_HANDPOINTER_INFO hpInfo = info.HandPointerInfos[j];
-			if (m_lastHandtrackedId == info.SkeletonTrackingId)
-			{
-				lastLeft = m_lastLeftEventType;
-				lastRight = m_lastRightEventType;
-			}
-			else
-			{
-				lastLeft = NUI_HAND_EVENT_TYPE_NONE;
-				lastRight = NUI_HAND_EVENT_TYPE_NONE;
-			}
-
-			NUI_HAND_EVENT_TYPE eventType = NUI_HAND_EVENT_TYPE_NONE;
-			if (S_OK == CaseLeftHand(info.SkeletonTrackingId,
-				&hpInfo, lastLeft, &eventType))
-			{
-				m_lastLeftEventType = eventType;
-			}
-			else if (S_OK == CaseRightHand(info.SkeletonTrackingId,
-				&hpInfo, lastRight, &eventType))
-			{
-				m_lastRightEventType = eventType;
-			}
-			else if (S_OK == CaseNoneHand(info.SkeletonTrackingId, &hpInfo))
-			{
-				if (m_lastHandtrackedId == info.SkeletonTrackingId)
-				{
-					m_lastLeftEventType = NUI_HAND_EVENT_TYPE_NONE;
-					m_lastRightEventType = NUI_HAND_EVENT_TYPE_NONE;
-				}
-			}
-			printf("X:%lf, Y:%lf, Z:%lf\n", hpInfo.RawX, hpInfo.RawY, hpInfo.RawZ);
-			printf("SSSSSSSSS:");
-			if (hpInfo.PressExtent > 0)
-				printf("push ...");
-			else if (hpInfo.PressExtent < 0)
-				printf("pull ...");
-			printf("\n");
-			DebugHandEventType(eventType);
+			UpdateLastHandType(pUserInfo, &m_mainUserInfo);
+			bMainUserUpdated = true;
 		}
 	}
 
-	if (m_lastHandtrackedId != candidateId)
+	if (!bMainUserUpdated && candidateId != NUI_SKELETON_INVALID_TRACKING_ID)
 	{
-		m_lastHandtrackedId = candidateId;
-		m_lastLeftEventType = NUI_HAND_EVENT_TYPE_NONE;
-		m_lastRightEventType = NUI_HAND_EVENT_TYPE_NONE;
+		m_mainUserInfo = iaFrame.UserInfos[candidateId];
 	}
 	//system("pause");
 	system("CLS");
 	return hr;
 }
+
+HRESULT SensorContext::UpdateLastHandType(IN const NUI_USER_INFO* pNewUserInfo, OUT NUI_USER_INFO* pLastUserInfo) const
+{
+	/*
+	结合上次和最新的手势，更新上次的手势
+	*/
+	if (!pNewUserInfo || !pLastUserInfo)
+		return E_INVALIDARG;
+
+	//没跟踪的骨架
+	if (NUI_SKELETON_INVALID_TRACKING_ID == pNewUserInfo->SkeletonTrackingId)
+		return S_FALSE;
+
+	//必须结合之前的eventType状态
+	for (int j = 0; j < NUI_USER_HANDPOINTER_COUNT; ++j)
+	{
+		const NUI_HANDPOINTER_INFO* pHandPointerInfo = pNewUserInfo->HandPointerInfos + j;
+		NUI_HANDPOINTER_INFO* pLastHandPointerInfo = pLastUserInfo->HandPointerInfos + j;
+		if (j == 0)
+		{
+			assert(NUI_HAND_TYPE_LEFT == pHandPointerInfo->HandType);
+		}
+		else
+		{
+			assert(NUI_HAND_TYPE_RIGHT == pHandPointerInfo->HandType);
+		}
+
+		NUI_HAND_EVENT_TYPE eventType = NUI_HAND_EVENT_TYPE_NONE;
+		if (NUI_HAND_TYPE_NONE != pHandPointerInfo->HandType)
+		{
+			PickHandEventType(pHandPointerInfo, pLastHandPointerInfo->HandEventType, &eventType);
+			pLastHandPointerInfo->HandEventType = eventType;//更新手势
+		}
+
+		DebugHandEventType(eventType);
+	}
+	return S_OK;
+}
+
 
 // Set camera angle
 HRESULT SensorContext::SetCameraAngle(long angle) {

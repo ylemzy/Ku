@@ -1,14 +1,8 @@
-/************************************************************************
-*						   Defines NUI Context							*
-*																		*
-*						  Author: Andrew DeVine							*
-*								  2013									*
-************************************************************************/
 
 #pragma once
 
 #include "stdafx.h"
-#include "NuiApi.h"  //Microsoft Kinect NUI Aggregate Header
+#include "NuiApi.h"
 #include <assert.h>
 #include <math.h>
 #include <KinectBackgroundRemoval.h>
@@ -88,20 +82,13 @@ enum RUNTIME_RESULT
 #define NO_EXIST_FLAG(var, flag) \
 	~var & flag
 
-//#define ERROR_CHECK(ret)	\
-//	if (FAILED(ret)){			\		
-//		std::stringstream ss;\
-//		ss << "failed" #ret " " << std::hex << ret << std::endl;\
-//		throw std::runtime_error(ss.str().c_str());\
-//	}
-//
-
-
-
 class SensorContext
 {
 	static const int		cBytesPerPixel = 4;
+
 	static const NUI_IMAGE_RESOLUTION	cDepthResolution = NUI_IMAGE_RESOLUTION_640x480;
+
+	//interaction时，必须640×480，否则处理深度数据会成为参数错误
 	static const NUI_IMAGE_RESOLUTION	cColorResolution = NUI_IMAGE_RESOLUTION_640x480;
 
 public:
@@ -140,26 +127,19 @@ private:
 	void					ResetBackgroundRemovedColorData();
 	void					ResetInteractionData();
 
-	HRESULT					CaseLeftHand(int skeletonId, 
+	HRESULT					PickHandEventType(
 								const NUI_HANDPOINTER_INFO* pHandPointerInfo,
 								NUI_HAND_EVENT_TYPE lastEventType = NUI_HAND_EVENT_TYPE_NONE,
 								NUI_HAND_EVENT_TYPE* pEventType = 0) const;
 
-	HRESULT					CaseRightHand(int skeletonId, 
-									const NUI_HANDPOINTER_INFO* pHandPointerInfo,
-									NUI_HAND_EVENT_TYPE lastEventType = NUI_HAND_EVENT_TYPE_NONE,
-									NUI_HAND_EVENT_TYPE* pEventType = 0) const;
-
-	HRESULT					CaseNoneHand(int skeletonId, const NUI_HANDPOINTER_INFO* pHandPointerInfo) const;
-
+	HRESULT					UpdateLastHandType(IN const NUI_USER_INFO* pUserInfoArray, OUT NUI_USER_INFO* pLastUserInfoArray) const;
 	void					DebugHandStateMsg(NUI_HAND_TYPE hand, DWORD state) const;
 	void					DebugHandEventType(NUI_HAND_EVENT_TYPE t) const;
 	bool					IsValidUseInfo(const NUI_USER_INFO* pUserInfo) const;
-
 public:
 	NUI_SKELETON_DATA		m_skData;
 	NUI_SKELETON_DATA		m_skData2;
-	NUI_USER_INFO			m_userInfo;
+	NUI_USER_INFO			m_mainUserInfo;
 	LONG					angle;
 
 	bool					m_bSkeletonValid;			//表示是否是最新有效数据
@@ -199,10 +179,6 @@ private:
 	
 	INuiSensor*				m_pNuiSensor;
 
-private:
-	int m_lastHandtrackedId;
-	NUI_HAND_EVENT_TYPE m_lastLeftEventType;
-	NUI_HAND_EVENT_TYPE m_lastRightEventType;
 };
 
 class KinectAdapter: public INuiInteractionClient

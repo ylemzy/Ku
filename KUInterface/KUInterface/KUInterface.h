@@ -1,10 +1,3 @@
-/************************************************************************
-*					 Defines Methods for DLL Export						*
-*																		*
-*						  Author: Andrew DeVine							*
-*								  2013									*
-************************************************************************/
-
 #pragma once
 
 #include "stdafx.h"
@@ -34,8 +27,8 @@ UNITYINTERFACE_API void NuiGetDepthImageSize(int* width, int* height);
 UNITYINTERFACE_API int NuiTrackedIndex();
 UNITYINTERFACE_API bool NuiExistPlayer();
 
-
 UNITYINTERFACE_API void NuiGetCameraAngle(OUT float* angle);
 UNITYINTERFACE_API bool NuiSetCameraAngle(int angle);
+
 
 UNITYINTERFACE_API void NuiRunTest(bool useColor, bool useDepth, bool useSkeleton);

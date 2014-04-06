@@ -1,19 +1,9 @@
-/************************************************************************
-*				   This file contains methods available					*
-*				to System.Runtime.InteropServies.DllImport				*
-*																		*
-*						  Author: Andrew DeVine							*
-*								  2013									*
-************************************************************************/
+
 
 #include "stdafx.h"
 #include "KUInterface.h"  //DLL export declarations
-#include "NuiContext.h"      //NUI object
+#include "NuiContext.h"   //NUI object
 
-
-/************************************************************************
-						NUI CONTEXT MANAGEMENT
-************************************************************************/
 
 
 class ContextOwner
@@ -225,7 +215,6 @@ int NuiEnableBackgroundRemoved(bool bOpen)
 	return hr;
 }
 
-
 int NuiEnableInteraction(bool bOpen)
 {
 	RUNTIME_RESULT hr = SUCCEEDED_OK;
@@ -236,24 +225,26 @@ int NuiEnableInteraction(bool bOpen)
 
 bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRightHand)
 {
+	assert(player >= 0);
 	if (pLeftHand == NULL && pRightHand == NULL)
 		return false;
 
-	NUI_HANDPOINTER_INFO* pHandPintInfo = ContextOwner::Instance()->m_userInfo.HandPointerInfos;
-	NUI_HANDPOINTER_INFO *pLeft = NULL, *pRight = NULL;
+	const NUI_HANDPOINTER_INFO* pHandPintInfo = ContextOwner::Instance()->m_mainUserInfo.HandPointerInfos;
+	const NUI_HANDPOINTER_INFO *pLeft = NULL, *pRight = NULL;
 
-	switch (pHandPintInfo[0].HandType)
+	for (int i = 0; i < NUI_USER_HANDPOINTER_COUNT; ++i)
 	{
-	case NUI_HAND_TYPE_NONE:
-		break;
-	case NUI_HAND_TYPE_LEFT:
-		pLeft = pHandPintInfo;
-		pRight = pHandPintInfo + 1;
-		break;
-	case NUI_HAND_TYPE_RIGHT:
-		pRight = pHandPintInfo;
-		pLeft = pHandPintInfo + 1;
-		break;
+		switch (pHandPintInfo[0].HandType)
+		{
+		case NUI_HAND_TYPE_NONE:
+			break;
+		case NUI_HAND_TYPE_LEFT:
+			pLeft = pHandPintInfo;
+			break;
+		case NUI_HAND_TYPE_RIGHT:
+			pRight = pHandPintInfo;
+			break;
+		}
 	}
 	
 	if (pLeft)
@@ -262,7 +253,7 @@ bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRight
 		pLeftHand->x = pLeft->RawX;
 		pLeftHand->y = pLeft->RawY;
 		pLeftHand->z = pLeft->RawZ;
-		pLeftHand->w = pLeft->PressExtent;
+		pLeftHand->PressExtent = pLeft->PressExtent;
 	}
 
 	if (pRight)
@@ -271,7 +262,7 @@ bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRight
 		pRightHand->x = pRight->RawX;
 		pRightHand->y = pRight->RawY;
 		pRightHand->z = pRight->RawZ;
-		pRightHand->w = pRight->PressExtent;
+		pRightHand->PressExtent = pRight->PressExtent;
 	}
 
 	return pLeft || pRight;
