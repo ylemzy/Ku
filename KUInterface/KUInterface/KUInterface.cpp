@@ -223,9 +223,9 @@ int NuiEnableInteraction(bool bOpen)
 }
 
 
-bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRightHand)
+bool NuiGetUseInfo(int player, OUT KUUseInfo* pLeftHand, OUT KUUseInfo* pRightHand)
 {
-	assert(player >= 0);
+	assert(player == ContextOwner::Instance()->m_mainUserInfo.SkeletonTrackingId);
 	if (pLeftHand == NULL && pRightHand == NULL)
 		return false;
 
@@ -253,7 +253,6 @@ bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRight
 		pLeftHand->x = pLeft->RawX;
 		pLeftHand->y = pLeft->RawY;
 		pLeftHand->z = pLeft->RawZ;
-		pLeftHand->PressExtent = pLeft->PressExtent;
 	}
 
 	if (pRight)
@@ -262,7 +261,6 @@ bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRight
 		pRightHand->x = pRight->RawX;
 		pRightHand->y = pRight->RawY;
 		pRightHand->z = pRight->RawZ;
-		pRightHand->PressExtent = pRight->PressExtent;
 	}
 
 	return pLeft || pRight;
@@ -289,4 +287,9 @@ void NuiRunTest(bool useColor, bool useDepth, bool useSkeleton)
 		::ResetEvent(ContextOwner::Instance()->m_hNextDepthFrameEvent);*/
 		NuiUpdate();
 	}
+}
+
+int NuiGetMainPlayerId()
+{
+	return ContextOwner::Instance()->m_mainUserInfo.SkeletonTrackingId;
 }

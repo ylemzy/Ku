@@ -34,7 +34,6 @@ typedef struct _KUVector4
 
 typedef struct _KUUseInfo
 {
-	INT handEventType;
+	DWORD handEventType;
 	FLOAT x, y, z;
-	FLOAT PressExtent;
 }KUUseInfo;

@@ -356,9 +356,6 @@ HRESULT SensorContext::ProcessSkeleton(RUNTIME_RESULT* rtHr) {
 	}
 KN_IA_EXIT:
 
-
-	
-
 	float closestSkeletonDistance = FLT_MAX;
 	int candidateId = -1;
 	
@@ -609,6 +606,8 @@ HRESULT SensorContext::PickHandEventType(
 	NUI_HAND_EVENT_TYPE_NONE // No change from last event, or an undefined change.
 	所以需要对考虑last event状态
 	*/
+
+	printf("x:%f,Y:%f,Z:%f\n", pHandPointerInfo->RawX, pHandPointerInfo->RawY, pHandPointerInfo->RawZ);
 	if (!pHandPointerInfo)
 		return E_INVALIDARG;
 
@@ -665,12 +664,12 @@ HRESULT SensorContext::ProcessInteraction(RUNTIME_RESULT* rtHr /*= 0*/)
 		printf("-----interaction skeleton %d with id %d------------\n", i, pUserInfo->SkeletonTrackingId);
 		if (pUserInfo->SkeletonTrackingId == m_mainUserInfo.SkeletonTrackingId)
 		{
-			UpdateLastHandType(pUserInfo, &m_mainUserInfo);
-			bMainUserUpdated = true;
+			if (S_OK == UpdateLastHandType(pUserInfo, &m_mainUserInfo))
+				bMainUserUpdated = true;
 		}
 	}
 
-	if (!bMainUserUpdated && candidateId != NUI_SKELETON_INVALID_TRACKING_ID)
+	if (!bMainUserUpdated && 0 <= candidateId && candidateId < NUI_SKELETON_COUNT)
 	{
 		m_mainUserInfo = iaFrame.UserInfos[candidateId];
 	}
@@ -696,14 +695,19 @@ HRESULT SensorContext::UpdateLastHandType(IN const NUI_USER_INFO* pNewUserInfo, 
 	{
 		const NUI_HANDPOINTER_INFO* pHandPointerInfo = pNewUserInfo->HandPointerInfos + j;
 		NUI_HANDPOINTER_INFO* pLastHandPointerInfo = pLastUserInfo->HandPointerInfos + j;
-		if (j == 0)
+
+		if (NUI_HAND_EVENT_TYPE_NONE != pHandPointerInfo->HandType)
 		{
-			assert(NUI_HAND_TYPE_LEFT == pHandPointerInfo->HandType);
+			if (j == 0)
+			{
+				assert(NUI_HAND_TYPE_LEFT == pHandPointerInfo->HandType);
+			}
+			else
+			{
+				assert(NUI_HAND_TYPE_RIGHT == pHandPointerInfo->HandType);
+			}
 		}
-		else
-		{
-			assert(NUI_HAND_TYPE_RIGHT == pHandPointerInfo->HandType);
-		}
+
 
 		NUI_HAND_EVENT_TYPE eventType = NUI_HAND_EVENT_TYPE_NONE;
 		if (NUI_HAND_TYPE_NONE != pHandPointerInfo->HandType)
