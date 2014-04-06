@@ -19,11 +19,11 @@
 class ContextOwner
 {
 public:
-	static NuiContext* Instance()
+	static SensorContext* Instance()
 	{
 		if (m_pNuiContext == NULL)
 		{
-			m_pNuiContext = new NuiContext();
+			m_pNuiContext = new SensorContext();
 		}
 		return m_pNuiContext;
 	}
@@ -34,68 +34,86 @@ public:
 		m_pNuiContext = NULL;
 	}
 private:
-	static NuiContext* m_pNuiContext;
+	static SensorContext* m_pNuiContext;
 };
 
-NuiContext* ContextOwner::m_pNuiContext = NULL;
+SensorContext* ContextOwner::m_pNuiContext = NULL;
 
 //Initializes NUI Context
-HRESULT NuiContextInit(bool twoPlayer) 
+int NuiInitContext(bool useColor, bool useDepth, bool useSkeleton) 
 {
 	RUNTIME_RESULT hr = SUCCEEDED_OK;
-	ContextOwner::Instance()->Nui_Init(&hr);
+	DWORD flag = 0;
+	if (useColor)
+		flag |= NUI_INITIALIZE_FLAG_USES_COLOR;
+	
+	if (useDepth)
+		flag |= NUI_INITIALIZE_FLAG_USES_DEPTH_AND_PLAYER_INDEX;
+
+	if (useSkeleton)
+		flag |= NUI_INITIALIZE_FLAG_USES_SKELETON;
+	ContextOwner::Instance()->InitSensor(flag, &hr);
 	return hr;
 }
 
-
 //Updates Skeleton, Image Data
-HRESULT NuiUpdate() 
+int NuiUpdate() 
 {
-	RUNTIME_RESULT rtColor = SUCCEEDED_OK, rtDepth = SUCCEEDED_OK, rtSk = SUCCEEDED_OK, rtBg = SUCCEEDED_OK;
-	HRESULT hrColor = S_OK, hrDepth = S_OK, hrSk = S_OK, hrBg = S_OK;
+	RUNTIME_RESULT rtColor = SUCCEEDED_OK, rtDepth = SUCCEEDED_OK, rtSk = SUCCEEDED_OK, rtBg = SUCCEEDED_OK, rtIa = SUCCEEDED_OK;
+	HRESULT hrColor = S_OK, hrDepth = S_OK, hrSk = S_OK, hrBg = S_OK, hrIa = S_OK;
 	
-	hrColor = ContextOwner::Instance()->imageValid = ContextOwner::Instance()->ProcessColor(&rtColor);
+	hrColor = ContextOwner::Instance()->ProcessColor(&rtColor);
 
-	hrDepth = ContextOwner::Instance()->depthValid = ContextOwner::Instance()->ProcessDepth(&rtDepth);
+	hrDepth = ContextOwner::Instance()->ProcessDepth(&rtDepth);
 
-	if (SUCCEEDED(hrDepth))
-		hrSk = ContextOwner::Instance()->skeletonValid = ContextOwner::Instance()->ProcessSkeleton(&rtSk);
+	//if (SUCCEEDED(hrDepth))
+		hrSk = ContextOwner::Instance()->ProcessSkeleton(&rtSk);
 	
 	if (SUCCEEDED(hrDepth))
-		hrBg = ContextOwner::Instance()->backgroundRemovedValid = ContextOwner::Instance()->ProcessBackgroundRemoved(&rtBg);
+		hrBg = ContextOwner::Instance()->ProcessBackgroundRemoved(&rtBg);
+
+	//if (SUCCEEDED(hrDepth) && SUCCEEDED(hrSk))
+		hrIa = ContextOwner::Instance()->ProcessInteraction(&rtIa);
 
 	//按顺序优先判断，骨架以及背景去除依赖于深度
 	if (FAILED(hrColor))
+	{
 		return rtColor;
+	}
 	else if (FAILED(hrDepth))
+	{
 		return rtDepth;
+	}
 	else if (FAILED(hrSk))
+	{
 		return rtSk;
+	}
 	else if (FAILED(hrBg))
+	{
 		return rtBg;
+	}
+	else if (FAILED(hrIa))
+	{
+		return rtIa;
+	}
 	
 	return SUCCEEDED_OK;
 }
 
 
 //Closes NUI Context
-void NuiContextUnInit() 
+void NuiUnInitContext() 
 {
 	ContextOwner::ReleaseInstance();
 }
 
-
-/************************************************************************
-							GET METHODS
-************************************************************************/
-
 //Creates Custom KUVector4 object for export to Unity
-void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransform) {
+void NuiGetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransform) {
 
 	KUVector4 &skTrans = *SkeletonTransform;
 
 	if (player == 1) {
-		if(SUCCEEDED(ContextOwner::Instance()->skeletonValid)) {
+		if(ContextOwner::Instance()->m_bSkeletonValid) {
 			skTrans.x = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].x;
 			skTrans.y = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].y;
 			skTrans.z = ContextOwner::Instance()->m_skData.SkeletonPositions[joint].z;
@@ -107,7 +125,7 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 			skTrans.w = 0.0f;
 		}
 	} else if (player == 2) {
-		if(SUCCEEDED(ContextOwner::Instance()->skeletonValid)) {
+		if(ContextOwner::Instance()->m_bSkeletonValid) {
 			skTrans.x = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].x;
 			skTrans.y = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].y;
 			skTrans.z = ContextOwner::Instance()->m_skData2.SkeletonPositions[joint].z;
@@ -128,43 +146,34 @@ void GetSkeletonTransform(int player, int joint, OUT KUVector4* SkeletonTransfor
 	ContextOwner::Instance()->TransformCoordinates(&skTrans);
 }
 
-
 //Gets color texture image
-byte* GetTextureImage(OUT int* size) {
-
-	*size = ContextOwner::Instance()->tsize;
-	return ContextOwner::Instance()->m_pTexture;
+byte* NuiGetTextureImage(OUT int* size) 
+{
+	*size = ContextOwner::Instance()->m_nImageSize;
+	return ContextOwner::Instance()->m_pImageData;
 }
 
-
 //Gets depth image
-byte* GetDepthImage(OUT int* size) 
+byte* NuiGetDepthImage(OUT int* size) 
 {
-	*size = ContextOwner::Instance()->dsize;
+	*size = ContextOwner::Instance()->m_nDepthSize;
 	return ContextOwner::Instance()->m_pDepthData;
 }
 
-
 //Gets current camera angle
-void GetCameraAngle(OUT float* angle) {
+void NuiGetCameraAngle(OUT float* angle) 
+{
 
 	*angle = ContextOwner::Instance()->angle;
 }
 
-
-const byte* GetBackgroundRemovedImage(OUT int* size)
+const byte* NuiGetBackgroundRemovedImage(OUT int* size)
 {
-	*size = ContextOwner::Instance()->backgroundRemovedSize;
-	return ContextOwner::Instance()->m_pBackgroundRemovedTexture;
+	*size = ContextOwner::Instance()->m_nBackgroundRemovedSize;
+	return ContextOwner::Instance()->m_pBackgroundRemovedData;
 }
 
-
-
-/************************************************************************
-							SET METHODS
-************************************************************************/
-
-bool SetCameraAngle(int angle) {
+bool NuiSetCameraAngle(int angle) {
 
 	HRESULT hr;
 	
@@ -181,14 +190,7 @@ bool SetCameraAngle(int angle) {
 	}
 }
 
-bool SetBackgroundRemoved(bool bEnabled)
-{
-	if (bEnabled)
-		ContextOwner::Instance()->CreateBackgroundRemovedColorStream();
-	return true;
-}
-
-void GetColorImageSize(int * width, int * height)
+void NuiGetColorImageSize(int * width, int * height)
 {
 	if (width == NULL || height == NULL)
 		return;
@@ -197,7 +199,7 @@ void GetColorImageSize(int * width, int * height)
 	*height = ContextOwner::Instance()->m_colorHeight;
 }
 
-void GetDepthImageSize(int* width, int* height)
+void NuiGetDepthImageSize(int* width, int* height)
 {
 	if (width == NULL || height == NULL)
 		return;
@@ -206,8 +208,94 @@ void GetDepthImageSize(int* width, int* height)
 	*height = ContextOwner::Instance()->m_depthHeight;
 }
 
-int GetTrackedIndex()
+int NuiTrackedIndex()
 {
 	return ContextOwner::Instance()->m_skTackedId;
 }
 
+bool NuiExistPlayer()
+{
+	return ContextOwner::Instance()->m_skTackedId != NUI_SKELETON_INVALID_TRACKING_ID; 
+}
+
+int NuiEnableBackgroundRemoved(bool bOpen)
+{
+	RUNTIME_RESULT hr = SUCCEEDED_OK;
+	ContextOwner::Instance()->SetEnableBackgroundRemovedColorStream(bOpen, &hr);
+	return hr;
+}
+
+
+int NuiEnableInteraction(bool bOpen)
+{
+	RUNTIME_RESULT hr = SUCCEEDED_OK;
+	ContextOwner::Instance()->SetEnableInteractioin(bOpen, &hr);
+	return hr;
+}
+
+
+bool NuiGetUseInfo(int player, OUT _KUUseInfo* pLeftHand, OUT _KUUseInfo* pRightHand)
+{
+	if (pLeftHand == NULL && pRightHand == NULL)
+		return false;
+
+	NUI_HANDPOINTER_INFO* pHandPintInfo = ContextOwner::Instance()->m_userInfo.HandPointerInfos;
+	NUI_HANDPOINTER_INFO *pLeft = NULL, *pRight = NULL;
+
+	switch (pHandPintInfo[0].HandType)
+	{
+	case NUI_HAND_TYPE_NONE:
+		break;
+	case NUI_HAND_TYPE_LEFT:
+		pLeft = pHandPintInfo;
+		pRight = pHandPintInfo + 1;
+		break;
+	case NUI_HAND_TYPE_RIGHT:
+		pRight = pHandPintInfo;
+		pLeft = pHandPintInfo + 1;
+		break;
+	}
+	
+	if (pLeft)
+	{
+		pLeftHand->handEventType = pLeft->HandEventType;
+		pLeftHand->x = pLeft->RawX;
+		pLeftHand->y = pLeft->RawY;
+		pLeftHand->z = pLeft->RawZ;
+		pLeftHand->w = pLeft->PressExtent;
+	}
+
+	if (pRight)
+	{
+		pRightHand->handEventType = pRight->HandEventType;
+		pRightHand->x = pRight->RawX;
+		pRightHand->y = pRight->RawY;
+		pRightHand->z = pRight->RawZ;
+		pRightHand->w = pRight->PressExtent;
+	}
+
+	return pLeft || pRight;
+}
+
+void NuiRunTest(bool useColor, bool useDepth, bool useSkeleton)
+{
+	NuiInitContext(useColor, useDepth, useSkeleton);
+	NuiEnableInteraction(true);
+
+	HANDLE hColor = ContextOwner::Instance()->m_hNextColorFrameEvent;
+	HANDLE hDepth = ContextOwner::Instance()->m_hNextDepthFrameEvent;
+	HANDLE hSkeleton = ContextOwner::Instance()->m_hNextSkeletonFrameEvent;
+	HANDLE hInteraction = ContextOwner::Instance()->m_hNextInteractionFrameEvent;
+	const HANDLE hEvents[] = 
+	{
+		hColor, hDepth, hSkeleton, hInteraction
+	};
+
+	while (1)
+	{
+		DWORD ret = ::WaitForMultipleObjects(_countof(hEvents), hEvents, FALSE, INFINITE);
+		/*if (WAIT_OBJECT_0 == ::WaitForSingleObject(hColor, INFINITE))
+		::ResetEvent(ContextOwner::Instance()->m_hNextDepthFrameEvent);*/
+		NuiUpdate();
+	}
+}
