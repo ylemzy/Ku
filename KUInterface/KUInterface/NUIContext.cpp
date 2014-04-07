@@ -97,6 +97,8 @@ HRESULT SensorContext::InitSensor(DWORD flag, RUNTIME_RESULT* rtHr /*= 0*/)
 		//m_pNuiSensor->NuiCameraElevationGetAngle(&angle);
 		
 	}
+
+	printf("Sensor Ready...\n");
 	return hr;
 }
 
@@ -397,7 +399,7 @@ KN_IA_EXIT:
 		}
 		m_bSkeletonValid = false;
 		m_skTackedId = NUI_SKELETON_INVALID_TRACKING_ID;
-		CHECK_RUTURN_WITH_RUNTIMERESULT(E_FAIL, rtHr, GET_SKELETON_FRAME_ERROR);
+		CHECK_RUTURN_WITH_RUNTIMERESULT(E_FAIL, rtHr, SUCCEEDED_FALSE);
 	}
 
 	HRESULT bgHr = S_OK;
@@ -509,7 +511,7 @@ HRESULT SensorContext::ProcessDepth(RUNTIME_RESULT *rtHr)
 	}
 	HRESULT hr;
 	
-	NUI_IMAGE_FRAME depthFrame;
+	NUI_IMAGE_FRAME depthFrame = {0};
 	// Attempt to get the depth frame
 	hr = m_pNuiSensor->NuiImageStreamGetNextFrame(m_hDepthStream, WAIT_FRAME_TIME, &depthFrame);
 	CHECK_RUTURN_WITH_RUNTIMERESULT(hr, rtHr, GET_DEPTH_FRAME_ERROR);

@@ -52,17 +52,19 @@ int NuiUpdate()
 	RUNTIME_RESULT rtColor = SUCCEEDED_OK, rtDepth = SUCCEEDED_OK, rtSk = SUCCEEDED_OK, rtBg = SUCCEEDED_OK, rtIa = SUCCEEDED_OK;
 	HRESULT hrColor = S_OK, hrDepth = S_OK, hrSk = S_OK, hrBg = S_OK, hrIa = S_OK;
 	
-	hrColor = ContextOwner::Instance()->ProcessColor(&rtColor);
+	if (ContextOwner::Instance()->IsColorEnabled())
+		hrColor = ContextOwner::Instance()->ProcessColor(&rtColor);
 
-	hrDepth = ContextOwner::Instance()->ProcessDepth(&rtDepth);
+	if (ContextOwner::Instance()->IsDepthEnabled())
+		hrDepth = ContextOwner::Instance()->ProcessDepth(&rtDepth);
 
-	//if (SUCCEEDED(hrDepth))
+	if (ContextOwner::Instance()->IsSkeletonEnabled())
 		hrSk = ContextOwner::Instance()->ProcessSkeleton(&rtSk);
 	
-	if (SUCCEEDED(hrDepth))
+	if (ContextOwner::Instance()->IsBackgroundRemovedEnabled())
 		hrBg = ContextOwner::Instance()->ProcessBackgroundRemoved(&rtBg);
 
-	//if (SUCCEEDED(hrDepth) && SUCCEEDED(hrSk))
+	if (ContextOwner::Instance()->IsInteractionEnabled())
 		hrIa = ContextOwner::Instance()->ProcessInteraction(&rtIa);
 
 	//按顺序优先判断，骨架以及背景去除依赖于深度
@@ -269,15 +271,16 @@ bool NuiGetUseInfo(int player, OUT KUUseInfo* pLeftHand, OUT KUUseInfo* pRightHa
 void NuiRunTest(bool useColor, bool useDepth, bool useSkeleton)
 {
 	NuiInitContext(useColor, useDepth, useSkeleton);
-	NuiEnableInteraction(true);
-
+	//NuiEnableInteraction(true);
+	NuiEnableBackgroundRemoved(true);
 	HANDLE hColor = ContextOwner::Instance()->m_hNextColorFrameEvent;
 	HANDLE hDepth = ContextOwner::Instance()->m_hNextDepthFrameEvent;
 	HANDLE hSkeleton = ContextOwner::Instance()->m_hNextSkeletonFrameEvent;
 	HANDLE hInteraction = ContextOwner::Instance()->m_hNextInteractionFrameEvent;
+	HANDLE hBg = ContextOwner::Instance()->m_hNextBackgroundRemovedFrameEvent;
 	const HANDLE hEvents[] = 
 	{
-		hColor, hDepth, hSkeleton, hInteraction
+		hColor, hDepth, hSkeleton, hInteraction, hBg
 	};
 
 	while (1)
