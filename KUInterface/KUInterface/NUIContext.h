@@ -89,8 +89,6 @@ class SensorContext
 
 	//interaction时，必须640×480，否则处理深度数据会成为参数错误
 	static const NUI_IMAGE_RESOLUTION	cDepthResolution = NUI_IMAGE_RESOLUTION_640x480;
-
-	
 	static const NUI_IMAGE_RESOLUTION	cColorResolution = NUI_IMAGE_RESOLUTION_640x480;
 
 public:
