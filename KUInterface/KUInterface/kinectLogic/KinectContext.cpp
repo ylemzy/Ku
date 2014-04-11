@@ -1,12 +1,8 @@
-
 #include "stdafx.h"
-#include "NuiContext.h"
+#include "KinectContext.h"
 #include <float.h>
 
-#define PI 3.14159265
-#define PLAYER_ONE 254
-#define PLAYER_TWO 255
-#define WAIT_FRAME_TIME 0	//经过测试，最好不超过10ms，否则导致background_removed 取不到帧
+
 
 SensorContext::SensorContext()
 	: m_pNuiSensor(NULL)

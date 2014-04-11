@@ -1,87 +1,14 @@
+#ifndef _KINECT_CONTEXT_H_
+#define _KINECT_CONTEXT_H_
 
-#pragma once
-
-#include "stdafx.h"
 #include "NuiApi.h"
 #include <assert.h>
 #include <math.h>
 #include <KinectBackgroundRemoval.h>
 #include <KinectInteraction.h>
-
-enum RUNTIME_RESULT
-{
-	SUCCEEDED_OK = 1,
-	SUCCEEDED_FALSE = 0,
-
-	CREATE_SENSOR_ERROR = -1,
-	SENSOR_INITIALIZE_ERROR = -2,
-
-	OPEN_IMAGE_COLOR_ERROR = -3,
-	OPEN_DEPTH_AND_PLAYER_INDEX_ERROR = -4,
-	OPEN_SKELETON_ERROR = -5,
-
-	CREATE_BACKGROUND_REMOVED_ERROR = -6,
-	ENABLE_BACKGROUND_REMOVED_ERROR = -7,
-
-	GET_IMAGE_FRAME_ERROR = -8,
-	GET_DEPTH_FRAME_ERROR = -9,
-	GET_SKELETON_FRAME_ERROR = -10,
-	GET_BACKGROUND_REMOVED_FRAME_ERROR = -11,
-
-	GET_DEPTH_IMAGE_PIXEL_FRAME_TEXTURE_ERROR = -12,
-
-	BACKGROUND_REMOVED_PROCESS_COLOR_ERROR = -13,
-	BACKGROUND_REMOVED_PROCESS_DEPTH_ERROR = -14,
-	BACKGROUND_REMOVED_PROCESS_SKELETON_ERROR = -15,
-
-	NO_SKELETON_TRACKING = -16,
-	SET_TRACKEDPLAYER_ERROR = -17,
-
-	REALEASE_HANDEL_ERROR = -18,
-
-	CREATE_INTERACTION_ERROR = -19,
-	ENABLE_INTERACTION_ERROR = -20,
-
-	INTERACTION_PROCESS_DEPTH_ERROR = -21,
-	INTERACTION_PROCESS_SKELETON_ERROR = -22,
-	ACCELEROMETER_GET_CURRENT_READING_ERROR = -23,
-	GET_INTERACTION_FRAME_ERROR = -24,
-};
-
-#define MAKE_RUNTIMERESULT(pHr, value)	\
-	if (pHr && *pHr == SUCCEEDED_OK) {	\
-		*pHr = value;	\
-	}
-
-#define CHECK_WITH_RUNTIMERESULT(hr, pHr, value) \
-	if (FAILED(hr))	\
-		MAKE_RUNTIMERESULT(pHr, value)
-
-#define CHECK_RUTURN_WITH_RUNTIMERESULT(hr, pRt, value) \
-	if (FAILED(hr)){ \
-		MAKE_RUNTIMERESULT(pRt, value) \
-		return hr;\
-	}
-
-#define CHECK_KN_EXIT(hr, EXIT)	\
-	if (FAILED(hr))			\
-		goto EXIT;		\
+#include "..\include\common.h"
 
 
-#define CLOSE_HANDLE(h)		\
-	if (h != INVALID_HANDLE_VALUE)\
-		CloseHandle(h);			\
-	h = INVALID_HANDLE_VALUE;
-
-#define IS_VALID_HANDLE(h)	\
-	h != INVALID_HANDLE_VALUE
-
-#define EXIST_FLAG(var, flag)	\
-	var & flag
-
-//注意变量和标记参数位置，另外～优先级比&高
-#define NO_EXIST_FLAG(var, flag) \
-	~var & flag
 
 class KN_DLL_CLASS SensorContext
 {
@@ -200,3 +127,5 @@ public:
 		FLOAT y, 
 		_Out_ NUI_INTERACTION_INFO *pInteractionInfo);
 };
+
+#endif
