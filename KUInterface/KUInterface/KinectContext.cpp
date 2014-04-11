@@ -56,7 +56,7 @@ HRESULT SensorContext::InitSensor(DWORD flag, RUNTIME_RESULT* rtHr /*= 0*/)
 	if (!m_pNuiSensor)
 	{
 		UnInitSensor();//先清空数据
-		if (FAILED(hr = FindSensor(rtHr)))
+		if (S_OK != FindSensor(rtHr))
 			return hr;
 	}
 
@@ -107,7 +107,7 @@ HRESULT SensorContext::FindSensor(RUNTIME_RESULT* rtHr /*= 0*/)
 {
 	HRESULT hr = S_FALSE;
 	int sensorCount = 0;
-	hr = NuiGetSensorCount(&sensorCount);
+	NuiGetSensorCount(&sensorCount);
 	INuiSensor* tempSensor = NULL;
 	for (int i = 0; i < sensorCount; ++i)
 	{
@@ -731,9 +731,9 @@ HRESULT SensorContext::SetCameraAngle(long angle) {
 }
 
 // Transform coordinates from camera view space to world space
-void SensorContext::TransformCoordinates(OUT KUVector4* skTrans) {
+void SensorContext::TransformCoordinates(OUT KVector4* skTrans) {
 
-	KUVector4 &in = *skTrans;
+	KVector4 &in = *skTrans;
 
 	in.x = in.x;
 	in.y = (in.y * cos((float)angle * (PI / 180))) + (in.z * sin((float)angle * (PI / 180)));

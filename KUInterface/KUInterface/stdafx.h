@@ -7,33 +7,37 @@
 
 #include "targetver.h"
 
-#define WIN32_LEAN_AND_MEAN             // Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 #include <windows.h>
 #include <atlbase.h>
 
 // C RunTime Header Files
 #include <stdlib.h>
+#include <stdio.h>
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
 
 using namespace std;
 
-#pragma comment (lib, "d3d9.lib")
-#pragma comment ( lib, "winmm.lib" )
+#ifndef KN_EXPORTS
+#define KN_DLL_CLASS __declspec(dllexport)
+#else
+#define KN_DLL_CLASS __declspec(dllimport)
+#endif
 
+#define KN_EXPORTS
 //Custom Vector struct for easier export
-typedef struct _KUVector4
+struct KVector4
 {
-	FLOAT x;
-	FLOAT y;
-	FLOAT z;
-	FLOAT w;
-} KUVector4;
+	float x;
+	float y;
+	float z;
+	float w;
+};
 
-typedef struct _KUUseInfo
+struct KUseInfo
 {
 	DWORD handEventType;
-	FLOAT x, y, z;
-}KUUseInfo;
+	float x, y, z;
+};

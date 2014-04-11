@@ -83,7 +83,7 @@ enum RUNTIME_RESULT
 #define NO_EXIST_FLAG(var, flag) \
 	~var & flag
 
-class SensorContext
+class KN_DLL_CLASS SensorContext
 {
 	static const int		cBytesPerPixel = 4;
 
@@ -98,7 +98,7 @@ public:
 public:
 	HRESULT					InitSensor(DWORD flag, RUNTIME_RESULT* rtHr = 0);
 	void                    UnInitSensor();
-	void					TransformCoordinates(OUT KUVector4* skTrans);
+	void					TransformCoordinates(OUT KVector4* skTrans);
 	HRESULT					ProcessSkeleton(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					ProcessColor(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					ProcessDepth(RUNTIME_RESULT* rtHr = 0);
