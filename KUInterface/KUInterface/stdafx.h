@@ -1,9 +1,5 @@
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
-
-#pragma once
+#ifndef _STDAFX_H_
+#define _STDAFX_H_
 
 #include "targetver.h"
 
@@ -27,17 +23,7 @@ using namespace std;
 #endif
 
 #define KN_EXPORTS
-//Custom Vector struct for easier export
-struct KVector4
-{
-	float x;
-	float y;
-	float z;
-	float w;
-};
 
-struct KUseInfo
-{
-	DWORD handEventType;
-	float x, y, z;
-};
+
+#endif
+
