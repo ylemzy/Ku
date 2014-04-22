@@ -10,11 +10,41 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="apiObject\CTypeApi.cpp" />
+    <ClCompile Include="apiObject\KinectApi.cpp" />
+    <ClCompile Include="dllMain\dllmain.cpp" />
+    <ClCompile Include="kinectLogic\CoordinateMapper.cpp" />
+    <ClCompile Include="kinectLogic\KinectContext.cpp" />
+    <ClCompile Include="Listener.cpp" />
+    <ClCompile Include="motionLogic\JointObject.cpp" />
+    <ClCompile Include="motionLogic\MotionAvatar.cpp" />
+    <ClCompile Include="motionLogic\MotionFragmentGenerator.cpp" />
+    <ClCompile Include="motionLogic\MotionRecognitionEngine.cpp" />
+    <ClCompile Include="motionLogic\MotionTileGenerator.cpp" />
+    <ClCompile Include="motionLogic\SkeletonDataTransmissor.cpp" />
+    <ClCompile Include="stdafx.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="apiObject\CTypeApi.h" />
+    <ClInclude Include="apiObject\KinectApi.h" />
+    <ClInclude Include="kinectLogic\CoordinateMapper.h" />
+    <ClInclude Include="kinectLogic\KinectContext.h" />
+    <ClInclude Include="Listener.h" />
+    <ClInclude Include="motionLogic\JointObject.h" />
+    <ClInclude Include="motionLogic\MotionAvatar.h" />
+    <ClInclude Include="motionLogic\MotionFragmentGenerator.h" />
+    <ClInclude Include="motionLogic\MotionRecognitionEngine.h" />
+    <ClInclude Include="motionLogic\MotionTileGenerator.h" />
+    <ClInclude Include="motionLogic\SkeletonDataTransmissor.h" />
+    <ClInclude Include="stdafx.h" />
+    <ClInclude Include="targetver.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{E5CB2154-64B0-428E-9C61-06DFAB580D65}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>KUInterface</RootNamespace>
-    <ProjectName>kinect_unity</ProjectName>
+    <ProjectName>Kinect</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -52,7 +82,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;KUINTERFACE_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -81,31 +111,6 @@
       <AdditionalDependencies>Kinect10.lib;KinectBackgroundRemoval180_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <None Include="ReadMe.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="KUInterface.h" />
-    <ClInclude Include="NUIContext.h" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="targetver.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="dllmain.cpp">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeader>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</CompileAsManaged>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="KUInterface.cpp" />
-    <ClCompile Include="NUIContext.cpp" />
-    <ClCompile Include="stdafx.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
