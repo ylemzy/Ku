@@ -30,8 +30,11 @@ using namespace std;
 #define PLAYER_TWO 255
 #define WAIT_FRAME_TIME 0	//经过测试，最好不超过10ms，否则导致background_removed 取不到帧
 
+/////////////////////////////////////////
 namespace SenLogic
 {
+	
+
 	enum RUNTIME_RESULT
 	{
 		SUCCEEDED_OK = 1,
@@ -172,6 +175,7 @@ namespace SenLogic
 
 	NUI_SKELETON_POSITION_INDEX TransToSKeletonIndex(JOINT_PART_TYPE jointType);
 
+	
 
 }
 

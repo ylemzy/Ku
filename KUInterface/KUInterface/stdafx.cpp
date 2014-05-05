@@ -2,6 +2,16 @@
 #include "stdafx.h"
 #include <math.h>
 
+void DebugLog (const char* str)
+{
+#if UNITY_WIN
+	OutputDebugStringA (str);
+#else
+	printf ("%s", str);
+#endif
+}
+
+
 void SenLogic::CalDirection(IN const Vector4& pointA, IN const Vector4& pointB, OUT Vector4& res)
 {
 	res.x = pointB.x - pointA.x;

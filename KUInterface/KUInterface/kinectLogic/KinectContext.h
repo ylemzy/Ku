@@ -79,7 +79,7 @@ struct BackGroudRemvoedData
 	friend class SensorContext;
 public:
 	BackGroudRemvoedData();
-	void ResetData();
+	void Reset();
 	DWORD GetTrackedId() const;
 	const FrameData* GetFrameData() const;
 
@@ -130,7 +130,7 @@ public:
 
 	//interaction时，必须640×480，否则处理深度数据会成为参数错误
 	static const NUI_IMAGE_RESOLUTION	cDepthResolution = NUI_IMAGE_RESOLUTION_640x480;
-	static const NUI_IMAGE_RESOLUTION	cColorResolution = NUI_IMAGE_RESOLUTION_640x480;
+	static const NUI_IMAGE_RESOLUTION	cColorResolution = NUI_IMAGE_RESOLUTION_1280x960;
 
 public:
 	SensorContext();
@@ -144,6 +144,7 @@ public:
 	HRESULT					ProcessColor(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					ProcessDepth(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					ProcessBackgroundRemoved(UINT index, RUNTIME_RESULT* rtHr = 0);
+	HRESULT					ProcessAllBackgroundRemoved(RUNTIME_RESULT* rtHr = 0);
 	HRESULT					ProcessInteraction(RUNTIME_RESULT* rtHr = 0);
 
 	HRESULT					SetCameraAngle(long angle);
@@ -230,6 +231,8 @@ private:
 	LONG					nKinecAngle;
 	bool					m_bComposed;//多个背景去除组合
 	//ofstream				myfile;
+
+	int personCount;
 };
 
 class KinectAdapter: public INuiInteractionClient

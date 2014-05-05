@@ -2,6 +2,8 @@
 #define __KINECT_API_H_
 
 #include "..\stdafx.h"
+#include "..\RendingPlugin\RendingPlugin.h"
+
 class SensorContext;
 class KN_DLL_CLASS CKinectWapper
 {
@@ -9,8 +11,9 @@ public:
 	CKinectWapper();
 	~CKinectWapper();
 
-public:
+
 	/*====================Sensor Context========================*/
+public:
 	// 初始化，并开启颜色，深度，骨骼
 	static int NuiInitContext(bool useColor, bool useDepth, bool useSkeleton);
 
@@ -20,6 +23,8 @@ public:
 	// 释放设备流
 	static void NuiUnInitContext();
 	/*====================color========================*/
+public:
+	static void GetColorResolution(int* width, int* height);
 	//Get Methods
 	// 获取图片，返回byte数组及其大小
 	static const byte* NuiGetTextureImage(OUT int* size);
@@ -27,6 +32,8 @@ public:
 	static void NuiGetColorImageSize(int * width, int * height);
 
 	/*=====================depth==========================*/
+public:
+	static void GetDepthResolution(int* width, int* height);
 	// 获取景深数据，返回byte数组，每4个byte为一个像素的数据[playerIndex，depthValue]
 	// 前两个byte指定playerIndex；
 	// 后两个byte表示深度值depthValue，以毫米为单位
@@ -35,6 +42,7 @@ public:
 	static void NuiGetDepthImageSize(int* width, int* height);
 
 	/*===========-background removed======================*/
+public:
 	// 开启或关闭背景去除。必须先NuiInitContext(true, true, true), 目前支持两人
 	static int NuSetBackgroundRemovedCount(UINT num);
 	// 去除背景图像大小，每个像素4个byte分别对应rgba，a为0，表示背景, size表示byte数组的长度
@@ -43,34 +51,51 @@ public:
 	static const byte* NuiGetBackgroundRemovedComposed(OUT int* size);
 	static void NuiSetBackgroundRemovedComposed(bool bComposed);
 	static bool NuiIsBackgroundRemovedComposed();
+	static bool NuiGetBackgroundRemovedTexture(UINT trackedId, void* texture);
 
-
+private:
+	static void FillTextureFromCode(DWORD width, DWORD height, int stride, unsigned char* dst);
+	static bool RenderTexture(DWORD width, DWORD height, const byte* src, void* texture);
 	/*===============interaction-===========================*/
+public:
 	//开启用户信息，目前只有手势的grip(抓)， grip_release,另外通过手的坐标判断其他逻辑
 	static int NuiSetInteractionCount(UINT num);
 	static bool NuiGetUseInfo(UINT player, OUT SenLogic::KUseInfo* pLeftHand, OUT SenLogic::KUseInfo* pRightHand);
 	static UINT NuiGetInteractionCount();
 	/*==============skeleton========================*/
+public:
+	static UINT NuiGetSkeletonId(UINT i);
 	// 玩家骨骼中某个部位的坐标
-	static void NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4* c);
+	static bool NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4* c);
 	static bool MapSkeletonToColor(Vector4 vec, int* x, int *y);
 	// 取得骨架对应的id
 	static UINT NuiGetFullSkeletonCount();
 	// 是否检测到玩家
 	static bool NuiExistPlayer();
 	/*===================camera=============================*/
+public:
 	static void NuiGetCameraAngle(OUT float* angle);
 	static bool NuiSetCameraAngle(int angle);
 
 	/*====================just test========================*/
-
+public:
 	static void NuiRunTest(bool useColor, bool useDepth, bool useSkeleton);
 
 	static void RunAngleTest();
 
+	/*=====================low-level rending=======================*/
+public:
 	
+	static void UnityRenderEvent(int eventID);
+	static void SetTextureFromUnity (UINT trackedId, void* texturePtr);
+private:
+	static void DoRendering();
+
 private:
 	static SensorContext* m_pNuiContext;
 	static SensorContext* Instance();
+	static int g_DeviceType;
+	static void* g_TexturePointer;
+	static UINT g_textureTrackId;
 };
 #endif

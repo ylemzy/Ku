@@ -6,6 +6,9 @@
 #include "..\motionLogic\MotionRecognitionEngine.h"
 #include "..\motionLogic\MotionAvatar.h"
 #include "..\kinectLogic\CoordinateMapper.h"
+#include "..\RendingPlugin\RendingPlugin.h"
+
+
 
 SensorContext* CKinectWapper::m_pNuiContext = NULL;
 
@@ -62,11 +65,9 @@ int CKinectWapper::NuiUpdate()
 		hrSk = Instance()->ProcessSkeleton(&rtSk);
 
 	
-	UINT num = Instance()->GetBackgroundRemovedCount();
-	
-	for (UINT i = 0; i < num; ++i)
+	if (Instance()->GetBackgroundRemovedCount() > 0)
 	{
-		Instance()->ProcessBackgroundRemoved(i, &rtBg);
+		Instance()->ProcessAllBackgroundRemoved(&rtBg);
 	}
 	if (Instance()->IsInteractionEnabled())
 	{
@@ -114,9 +115,9 @@ const byte* CKinectWapper::NuiGetDepthImage(OUT int* size)
 	return Instance()->GetDepthData()->GetData();
 }
 
-const byte* CKinectWapper::NuiGetBackgroundRemovedImage(UINT player, OUT int* size)
+const byte* CKinectWapper::NuiGetBackgroundRemovedImage(UINT trackedId, OUT int* size)
 {
-	const BackGroudRemvoedData* pData = Instance()->GetBackgroundRemovedData(player);
+	const BackGroudRemvoedData* pData = Instance()->GetBackgroundRemovedData(trackedId);
 	if (!pData)
 	{
 		if (size)
@@ -128,10 +129,25 @@ const byte* CKinectWapper::NuiGetBackgroundRemovedImage(UINT player, OUT int* si
 	return pData->GetFrameData()->GetData();
 }
 
-void CKinectWapper::NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4* SkeletonTransform)
+bool CKinectWapper::NuiGetBackgroundRemovedTexture(UINT trackedId, void* texture)
+{
+	/*if (!texture)
+		return false;*/
+	const BackGroudRemvoedData* pData = Instance()->GetBackgroundRemovedData(trackedId);
+	if (!pData)
+	{
+		return false;
+	}
+	DWORD width = 0, height = 0;
+	pData->GetFrameData()->GetSize(width, height);
+	RenderTexture(width, height, pData->GetFrameData()->GetData(), texture);
+	return true;
+}
+
+bool CKinectWapper::NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4* SkeletonTransform)
 {
 	if (!SkeletonTransform)
-		return;
+		return false;
 
 	SkeletonTransform->x = 0.f;
 	SkeletonTransform->y = 0.f;
@@ -139,31 +155,36 @@ void CKinectWapper::NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4*
 	SkeletonTransform->w = 0.f;
 
 	const SkeletonData* pSkeletonData = Instance()->GetSkeletonData();
-	if (player < 0 || player >= pSkeletonData->GetFullSkeletonCount())
-	{
-		return;
-	}
+	if (!pSkeletonData)
+		return false;
 
 	const NUI_SKELETON_DATA* pData = pSkeletonData->GetSkeletonIndexByTrackedId(player);
-	*SkeletonTransform = pData->SkeletonPositions[joint];
+	if (!pData)
+		return false;
+	if (pData->eSkeletonPositionTrackingState[joint] != NUI_SKELETON_POSITION_NOT_TRACKED)
+	{
+		*SkeletonTransform = pData->SkeletonPositions[joint];
+	}
+	
 	//Instance()->TransformCoordinates(&skTrans);
+	return true;
 }
 
 bool CKinectWapper::NuiGetUseInfo(UINT player, OUT SenLogic::KUseInfo* pLeftHand, OUT SenLogic::KUseInfo* pRightHand)
 {
-	assert(player < Instance()->GetInteractionData()->GetCount());
 	if (pLeftHand == NULL && pRightHand == NULL)
 		return false;
 
-	if (player < Instance()->GetInteractionData()->GetCount())
+	const NUI_USER_INFO* pUserInfo = Instance()->GetInteractionData()->GetUserInfoByTrackedId(player);
+	if (!pUserInfo)
 		return false;
 
-	const NUI_HANDPOINTER_INFO* pHandPintInfo = Instance()->GetInteractionData()->GetUserInfoByTrackedId(player)->HandPointerInfos;
+	const NUI_HANDPOINTER_INFO* pHandPintInfo = pUserInfo->HandPointerInfos;
 	const NUI_HANDPOINTER_INFO *pLeft = NULL, *pRight = NULL;
 
 	for (int i = 0; i < NUI_USER_HANDPOINTER_COUNT; ++i)
 	{
-		switch (pHandPintInfo[0].HandType)
+		switch (pHandPintInfo[i].HandType)
 		{
 		case NUI_HAND_TYPE_NONE:
 			break;
@@ -183,6 +204,10 @@ bool CKinectWapper::NuiGetUseInfo(UINT player, OUT SenLogic::KUseInfo* pLeftHand
 		pLeftHand->y = pLeft->RawY;
 		pLeftHand->z = pLeft->RawZ;
 	}
+	else if (pLeftHand)
+	{
+		pLeftHand->handEventType = -1;//表示没有手
+	}
 
 	if (pRight)
 	{
@@ -191,10 +216,11 @@ bool CKinectWapper::NuiGetUseInfo(UINT player, OUT SenLogic::KUseInfo* pLeftHand
 		pRightHand->y = pRight->RawY;
 		pRightHand->z = pRight->RawZ;
 	}
-
+	else if (pRightHand)
+	{
+		pRightHand->handEventType = -1;
+	}
 	return pLeft || pRight;
-
-	return false;
 }
 
 void CKinectWapper::NuiGetColorImageSize(int * width, int * height)
@@ -281,6 +307,49 @@ void CKinectWapper::NuiRunTest(bool useColor, bool useDepth, bool useSkeleton)
 		NuiUpdate();
 
 		system("CLS");
+//测试用的代码
+		if (NuiGetFullSkeletonCount())
+		{
+			int id = NuiGetSkeletonId(0);
+		}
+
+		if (NuiGetBackgroundRemovedCount())
+		{
+			int id = 0;
+			id++;
+		}
+
+		int size = 0;
+		NuiGetBackgroundRemovedImage(0, &size);
+		if (NuiExistPlayer())
+		{
+			/*int id = NuiGetSkeletonId(0);
+			NuiGetBackgroundRemoveduTexture(id, NULL);*/
+			/*Vector4 trans = {0};
+			NuiGetSkeletonTransform(id, NUI_SKELETON_POSITION_HEAD, &trans);
+			printf("head position is %d %d %d", trans.x, trans.y, trans.z);*/
+
+			int id = NuiGetSkeletonId(0);
+			SenLogic::KUseInfo lHand = {0}, rHand = {0};
+			NuiGetUseInfo(id, &lHand, &rHand);
+			int a = 0;
+			switch (rHand.handEventType)
+			{
+			case -1:
+				a++;
+				break;
+			case 0:
+				a++;
+				break;
+			case 1:
+				a++;
+				break;
+			case 2:
+				a++;
+				break;
+			}
+
+		}
 		//if (NuiExistPlayer())
 		//{
 		//	const NUI_SKELETON_DATA* pData = &(Instance()->m_skData);
@@ -385,3 +454,122 @@ UINT CKinectWapper::NuiGetInteractionCount()
 {
 	return Instance()->GetInteractionData()->GetCount();
 }
+
+void CKinectWapper::GetColorResolution(int* width, int* height)
+{
+	DWORD w = 0, h = 0;
+	NuiImageResolutionToSize(Instance()->cColorResolution, w, h);
+	if (width)
+		*width = w;
+	if (height)
+		*height = h;
+}
+
+void CKinectWapper::GetDepthResolution(int* width, int* height)
+{
+	DWORD w = 0, h = 0;
+	NuiImageResolutionToSize(Instance()->cDepthResolution, w, h);
+	if (width)
+		*width = w;
+	if (height)
+		*height = h;
+}
+
+UINT CKinectWapper::NuiGetSkeletonId(UINT i)
+{
+	return Instance()->GetSkeletonData()->GetFullTrackedId(i);
+}
+
+void CKinectWapper::FillTextureFromCode(DWORD width, DWORD height, int stride, unsigned char* dst)
+{
+	/*int totalLenght = width * height * 4;
+	memcpy(dst, src, totalLenght);*/
+
+	MessageBox(NULL, L"FillTextureFromCode", NULL, MB_OK);
+	const float t = 1 * 4.0f;
+
+	for (int y = 0; y < height; ++y)
+	{
+		unsigned char* ptr = dst;
+		for (int x = 0; x < width; ++x)
+		{
+			// Simple oldskool "plasma effect", a bunch of combined sine waves
+			int vv = int(
+				(127.0f + (127.0f * sinf(x/7.0f+t))) +
+				(127.0f + (127.0f * sinf(y/5.0f-t))) +
+				(127.0f + (127.0f * sinf((x+y)/6.0f-t))) +
+				(127.0f + (127.0f * sinf(sqrtf(float(x*x + y*y))/4.0f-t)))
+				) / 4;
+
+			// Write the texture pixel
+			ptr[0] = vv;
+			ptr[1] = vv;
+			ptr[2] = vv;
+			ptr[3] = vv;
+
+			// To next pixel (our pixels are 4 bpp)
+			ptr += 4;
+		}
+
+		// To next image row
+		dst += stride;
+	}
+}
+
+bool CKinectWapper::RenderTexture(DWORD width, DWORD height, const byte* src, void* texture)
+{
+	
+	return true;
+}
+
+void CKinectWapper::UnityRenderEvent(int eventID)
+{
+	// Unknown graphics device type? Do nothing.
+	MessageBox(NULL, L"ffffffffffffffff", NULL, MB_OK);
+	if (g_DeviceType == -1)
+		return;
+
+	if (g_TexturePointer == NULL || g_textureTrackId == 0)
+		return;
+
+	MessageBox(NULL, L"rrrrrrrrr", NULL, MB_OK);
+	DoRendering();
+}
+
+void CKinectWapper::DoRendering()
+{
+#if SUPPORT_OPENGL
+	// OpenGL case
+	if (g_DeviceType == kGfxRendererOpenGL)
+	{
+		
+		// update native texture from code
+		if (g_TexturePointer)
+		{
+			GLuint gltex = (GLuint)(size_t)(g_TexturePointer);
+			glBindTexture (GL_TEXTURE_2D, gltex);
+			int texWidth, texHeight;
+			glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &texWidth);
+			glGetTexLevelParameteriv (GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &texHeight);
+
+			unsigned char* data = new unsigned char[texWidth*texHeight*4];
+			FillTextureFromCode (texWidth, texHeight, texHeight*4, data);
+			glTexSubImage2D (GL_TEXTURE_2D, 0, 0, 0, texWidth, texHeight, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			delete[] data;
+		}
+	}
+#endif
+}
+
+void CKinectWapper::SetTextureFromUnity(UINT trackedId, void* texturePtr)
+{
+	g_TexturePointer = texturePtr;
+	g_textureTrackId = trackedId;
+	MessageBox(NULL, L"SetTexture", NULL, MB_OK);
+}
+
+UINT CKinectWapper::g_textureTrackId = 0;
+
+void* CKinectWapper::g_TexturePointer = NULL;
+
+int CKinectWapper::g_DeviceType = kGfxRendererOpenGL;

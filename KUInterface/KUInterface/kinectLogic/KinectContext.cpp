@@ -10,6 +10,7 @@ SensorContext::SensorContext()
 	, m_bInterActEnabled(false)
 {
 	//freopen("out.txt", "w", stdout);
+	personCount = 0;
 }
 
 //初始化，多次调用不会有产生多次重复的flag初始化
@@ -59,7 +60,7 @@ HRESULT SensorContext::InitSensor(DWORD flag, RUNTIME_RESULT* rtHr /*= 0*/)
 		
 	}
 
-	printf("Sensor Ready...\n");
+	//printf("Sensor Ready...\n");
 	return hr;
 }
 
@@ -252,7 +253,7 @@ HRESULT SensorContext::SetBackgroundRemovedCount(UINT peopelCount, RUNTIME_RESUL
 		hr = tmpData.m_pStream->Enable(cColorResolution, cDepthResolution, tmpData.m_hEvent);
 		if (FAILED(hr))
 		{
-			tmpData.ResetData();
+			tmpData.Reset();
 			CHECK_RUTURN_WITH_RUNTIMERESULT(hr, rtHr, ENABLE_BACKGROUND_REMOVED_ERROR);
 		}
 
@@ -307,37 +308,37 @@ HRESULT SensorContext::ProcessSkeleton(RUNTIME_RESULT* rtHr) {
 
 	const NUI_SKELETON_DATA* pSkeletonData = skeletonFrame.SkeletonData;
 
-	if (!PickValidSkeleton(pSkeletonData))
-	{
-		CHECK_RUTURN_WITH_RUNTIMERESULT(E_FAIL, rtHr, SUCCEEDED_FALSE);
-	}
+	bool bOk = PickValidSkeleton(pSkeletonData);
 
 	{
 		//debug
-		for (SkeletonIdMap::const_iterator itr = m_skeletonData.m_fullTrackedMap.begin();
+		/*for (SkeletonIdMap::const_iterator itr = m_skeletonData.m_fullTrackedMap.begin();
 			itr != m_skeletonData.m_fullTrackedMap.end(); ++itr)
 		{
-			printf("skeleton : %d, state=%d\n", itr->first, m_skeletonData.m_dataArray[itr->second].eTrackingState);
+			printf("full skeleton : %d, state=%d\n", itr->first, m_skeletonData.m_dataArray[itr->second].eTrackingState);
 		}
-
+		
 		for (SkeletonIdMap::const_iterator itr = m_skeletonData.m_unFullTrackedMap.begin();
 			itr != m_skeletonData.m_unFullTrackedMap.end(); ++itr)
 		{
 			printf("skeleton : %d, state=%d\n", itr->first, m_skeletonData.m_dataArray[itr->second].eTrackingState);
-		}
+		}*/
 	}
-	
+
+
 	m_skeletonData.m_timeStamp = skeletonFrame.liTimeStamp;
 	
-	if (m_skeletonData.m_fullTrackedMap.size() > 0)
+	HRESULT bgHr = ProcessSkeletonInBackgroundRemoved(pSkeletonData, rtHr);
+	HRESULT iaHr = ProcessSkeletonInInteraction(pSkeletonData, rtHr);
+	if (!bOk)
 	{
-		HRESULT bgHr = ProcessSkeletonInBackgroundRemoved(pSkeletonData, rtHr);
-		HRESULT iaHr = ProcessSkeletonInInteraction(pSkeletonData, rtHr);
-		if (FAILED(iaHr))
-			return iaHr;
-		else if (FAILED(bgHr))
-			return bgHr;
+		CHECK_RUTURN_WITH_RUNTIMERESULT(E_FAIL, rtHr, SUCCEEDED_FALSE);
 	}
+
+	if (FAILED(iaHr))
+		return iaHr;
+	else if (FAILED(bgHr))
+		return bgHr;
 	
 	return hr;
 }
@@ -447,14 +448,14 @@ HRESULT SensorContext::ProcessBackgroundRemoved(UINT index, RUNTIME_RESULT *rtHr
 			bgRemovedFrame.pBackgroundRemovedColorData, 
 			bgRemovedFrame.backgroundRemovedColorDataLength,
 			bgRemovedFrame.liTimeStamp);
-		printf("with m_backGrmDataVec index %d, trackid %d\n", index, m_backGrmDataVec[index].m_trackedId);
+		//printf("with m_backGrmDataVec index %d, trackid %d\n", index, m_backGrmDataVec[index].m_trackedId);
 		//WriteFrameData(&(m_backGrmDataVec[index].m_frameData));
 	}
 	
 	HRESULT rHr = m_backGrmDataVec[index].m_pStream->ReleaseFrame(&bgRemovedFrame);
 	if (FAILED(hr))
 	{
-
+		//printf("Get background %d false\n", m_backGrmDataVec[index].GetTrackedId());
 		CHECK_RUTURN_WITH_RUNTIMERESULT(hr, rtHr, GET_BACKGROUND_REMOVED_FRAME_ERROR);
 	}
 
@@ -473,7 +474,7 @@ HRESULT SensorContext::PickHandEventType(
 	所以需要对考虑last event状态
 	*/
 
-	printf("x:%f,Y:%f,Z:%f\n", pHandPointerInfo->RawX, pHandPointerInfo->RawY, pHandPointerInfo->RawZ);
+	//printf("x:%f,Y:%f,Z:%f\n", pHandPointerInfo->RawX, pHandPointerInfo->RawY, pHandPointerInfo->RawZ);
 	if (!pHandPointerInfo)
 		return E_INVALIDARG;
 
@@ -511,7 +512,7 @@ HRESULT SensorContext::ProcessInteraction(RUNTIME_RESULT* rtHr /*= 0*/)
 	}
 
 	
-	printf("new frame data--------------------------------------------\n");
+	//printf("new frame data--------------------------------------------\n");
 
 	bool updatedFlags[6] = {false};
 
@@ -529,7 +530,7 @@ HRESULT SensorContext::ProcessInteraction(RUNTIME_RESULT* rtHr /*= 0*/)
 		//更形上次有效的
 		if (itr != m_interActData.m_userIdMap.end())
 		{
-			printf("-----interaction skeleton %d with SkeletonTrackingId %d------------\n", i, pUserInfo->SkeletonTrackingId);
+			//printf("-----interaction skeleton %d with SkeletonTrackingId %d------------\n", i, pUserInfo->SkeletonTrackingId);
 			UpdateLastHandType(pUserInfo, &(m_interActData.m_userInfos[itr->second]));
 			updatedFlags[itr->second] = true;
 			++updatedSum;
@@ -562,7 +563,7 @@ HRESULT SensorContext::ProcessInteraction(RUNTIME_RESULT* rtHr /*= 0*/)
 			if (updatedFlags[j] == true)
 				continue;
 
-			printf("-----interaction skeleton %d with SkeletonTrackingId %d------------\n", i, pUserInfo->SkeletonTrackingId);
+			//printf("-----interaction skeleton %d with SkeletonTrackingId %d------------\n", i, pUserInfo->SkeletonTrackingId);
 			m_interActData.m_userInfos[j] = *pUserInfo;
 			updatedFlags[j] = true;
 			m_interActData.m_userIdMap[pUserInfo->SkeletonTrackingId] = j;
@@ -593,9 +594,15 @@ HRESULT SensorContext::UpdateLastHandType(IN const NUI_USER_INFO* pNewUserInfo, 
 		NUI_HAND_EVENT_TYPE eventType = NUI_HAND_EVENT_TYPE_NONE;
 		if (NUI_HAND_TYPE_NONE != pHandPointerInfo->HandType)
 		{
+			pLastHandPointerInfo->HandType = pHandPointerInfo->HandType;//更新手
 			PickHandEventType(pHandPointerInfo, pLastHandPointerInfo->HandEventType, &eventType);
 			pLastHandPointerInfo->HandEventType = eventType;//更新手势
 		}
+		else if (pLastUserInfo)
+		{
+			pLastHandPointerInfo->HandType = NUI_HAND_TYPE_NONE;
+		}
+		
 
 		DebugHandEventType(eventType);
 	}
@@ -669,7 +676,7 @@ void SensorContext::ResetBackgroundRemovedColorData()
 {
 	for (UINT i = 0; i < m_backGrmDataVec.size(); ++i)
 	{
-		m_backGrmDataVec[i].ResetData();
+		m_backGrmDataVec[i].Reset();
 	}
 	m_backGrmDataVec.clear();
 	m_backGrmIdMap.clear();
@@ -689,6 +696,7 @@ bool SensorContext::IsValidUseInfo(const NUI_USER_INFO* pUserInfo) const
 
 void SensorContext::DebugHandStateMsg(NUI_HAND_TYPE hand, DWORD state) const
 {
+	return;
 	if (NUI_HAND_TYPE_NONE == hand)
 		return;
 
@@ -720,6 +728,7 @@ void SensorContext::DebugHandStateMsg(NUI_HAND_TYPE hand, DWORD state) const
 
 void SensorContext::DebugHandEventType(NUI_HAND_EVENT_TYPE t) const
 {
+	return;
 	printf("Hand event type :");
 	switch (t)
 	{
@@ -776,6 +785,13 @@ HRESULT SensorContext::ProcessSkeletonInBackgroundRemoved(const NUI_SKELETON_DAT
 		return S_FALSE;
 	}
 
+	if (m_skeletonData.GetFullSkeletonCount() == 0)
+	{
+		MAKE_RUNTIMERESULT(pHr, SUCCEEDED_FALSE);
+		m_backGrmIdMap.clear();
+		return S_FALSE;
+	}
+
 	HRESULT hr = S_OK;
 
 	bool bTracked[NUI_SKELETON_COUNT] = {false};
@@ -788,6 +804,7 @@ HRESULT SensorContext::ProcessSkeletonInBackgroundRemoved(const NUI_SKELETON_DAT
 		if (bgItr != m_backGrmIdMap.end())//持续的id
 		{
 			bTracked[bgItr->second] = true;
+			printf("background %d still valid\n", bgItr->first);
 			hr = m_backGrmDataVec[bgItr->second].m_pStream->ProcessSkeleton(NUI_SKELETON_COUNT, skeletons, m_skeletonData.m_timeStamp);
 			CHECK_RUTURN_WITH_RUNTIMERESULT(hr, pHr, BACKGROUND_REMOVED_PROCESS_SKELETON_ERROR);
 		}
@@ -811,6 +828,7 @@ HRESULT SensorContext::ProcessSkeletonInBackgroundRemoved(const NUI_SKELETON_DAT
 			{
 				continue;
 			}
+			printf("new background %d \n", itr->first);
 			hr = m_backGrmDataVec[i].m_pStream->SetTrackedPlayer(itr->first);
 			CHECK_RUTURN_WITH_RUNTIMERESULT(hr, pHr, SET_TRACKEDPLAYER_ERROR)
 			hr = m_backGrmDataVec[i].m_pStream->ProcessSkeleton(NUI_SKELETON_COUNT, skeletons, m_skeletonData.m_timeStamp);
@@ -829,7 +847,7 @@ HRESULT SensorContext::ProcessSkeletonInBackgroundRemoved(const NUI_SKELETON_DAT
 			continue;
 
 		m_backGrmIdMap[m_backGrmDataVec[i].GetTrackedId()] = i;//选取有效的数据
-		printf("background <-- skeleton %d by stream %d\n", m_backGrmDataVec[i].GetTrackedId(), i);
+		//printf("background <-- skeleton %d by stream %d\n", m_backGrmDataVec[i].GetTrackedId(), i);
 	}
 	return hr;
 }
@@ -944,6 +962,8 @@ UINT SensorContext::GetSkeletonSize() const
 
 UINT SensorContext::GetBackgroundRemovedCount() const
 {
+	//printf("background remove count %d\n", m_backGrmIdMap.size());
+	
 	return m_backGrmIdMap.size();
 }
 
@@ -955,7 +975,7 @@ HRESULT SensorContext::ComposeBackgroundRemoved(UINT index)
 	const FrameData* pData = m_backGrmDataVec[index].GetFrameData();
 	if (false == m_backgroundComposed.Compose(pData))
 		return S_FALSE;
-	printf("Composing %d\n", m_backGrmDataVec[index].GetTrackedId());
+	//printf("Composing %d\n", m_backGrmDataVec[index].GetTrackedId());
 	return S_OK;
 }
 
@@ -992,9 +1012,11 @@ bool SensorContext::IsBackgroundRemovedComposed()
 
 const BackGroudRemvoedData* SensorContext::GetBackgroundRemovedData(UINT index) const
 {
-	if (index >= m_backGrmDataVec.size())
+	SkeletonIdMap::const_iterator itr = m_backGrmIdMap.find(index);
+	if (itr == m_backGrmIdMap.end())
 		return NULL;
-	return &m_backGrmDataVec[index];
+
+	return &m_backGrmDataVec[itr->second];
 }
 
 UINT SensorContext::GetInteractionCount() const
@@ -1004,6 +1026,7 @@ UINT SensorContext::GetInteractionCount() const
 
 void SensorContext::WriteFrameData(const FrameData* pData) const
 {
+	return;
 	DWORD w = 0, h = 0;
 	pData->GetSize(w, h);
 	const byte* pByteData = pData->GetData();
@@ -1031,6 +1054,16 @@ void SensorContext::WriteFrameData(const FrameData* pData) const
 		}
 		printf("\n");
 	}
+}
+
+HRESULT SensorContext::ProcessAllBackgroundRemoved(RUNTIME_RESULT* rtHr /*= 0*/)
+{
+	HRESULT hr = S_OK;
+	for (SkeletonIdMap::const_iterator bgItr = m_backGrmIdMap.begin(); bgItr != m_backGrmIdMap.end(); ++bgItr)
+	{
+		hr = ProcessBackgroundRemoved(bgItr->second, rtHr);
+	}
+	return hr;
 }
 
 KinectAdapter::KinectAdapter()
@@ -1104,9 +1137,11 @@ FrameData::FrameData(NUI_IMAGE_RESOLUTION res)
 void FrameData::Reset()
 {
 	delete m_pData;
+	m_pData = NULL;
 	m_resolution = NUI_IMAGE_RESOLUTION_INVALID;
 	m_bInvalid = false;
 	m_timeStamp.QuadPart = -1;
+	
 }
 
 void FrameData::SetResolution(NUI_IMAGE_RESOLUTION res)
@@ -1149,6 +1184,7 @@ bool FrameData::CopyData(const byte* data, DWORD size, const LARGE_INTEGER& time
 		m_bInvalid = false;
 		return false;
 	}
+
 	memcpy(m_pData, data, size);
 	m_timeStamp = timeStamp;
 	m_bInvalid = true;
@@ -1228,12 +1264,13 @@ BackGroudRemvoedData::BackGroudRemvoedData()
 
 }
 
-void BackGroudRemvoedData::ResetData()
+void BackGroudRemvoedData::Reset()
 {
 	if (m_pStream)
 	{
 		m_pStream->Disable();
 		m_pStream->Release();
+		m_pStream = NULL;
 	}
 	CLOSE_HANDLE(m_hEvent);
 	m_trackedId = NUI_SKELETON_INVALID_TRACKING_ID;
@@ -1265,8 +1302,9 @@ void InteractionData::Reset()
 		m_pStream->Disable();
 		m_pStream->Release();
 	}
-
+	m_pStream = NULL;
 	delete m_pClient;
+	m_pClient = NULL;
 	CLOSE_HANDLE(m_hEvent);
 	m_userIdMap.clear();
 }
@@ -1361,7 +1399,7 @@ DWORD SkeletonData::GetPositionOnlyTrackedId(UINT uIndex) const
 const NUI_SKELETON_DATA* SkeletonData::GetSkeletonIndexByTrackedId(DWORD trackedId) const
 {
 	SkeletonIdMap::const_iterator itr = m_fullTrackedMap.find(trackedId);
-	if (itr == m_fullTrackedMap.end())
+	if (itr != m_fullTrackedMap.end())
 		return &(m_dataArray[itr->second]);
 	
 	itr = m_unFullTrackedMap.find(trackedId);
@@ -1372,7 +1410,7 @@ const NUI_SKELETON_DATA* SkeletonData::GetSkeletonIndexByTrackedId(DWORD tracked
 
 DWORD SkeletonData::GetFullTrackedId(UINT uIndex) const
 {
-	if (uIndex < m_unFullTrackedMap.size())
+	if (uIndex < m_fullTrackedMap.size())
 	{
 		SkeletonIdMap::const_iterator itr = m_fullTrackedMap.begin();
 		while (uIndex && itr != m_fullTrackedMap.end())

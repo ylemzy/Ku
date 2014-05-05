@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -23,6 +23,7 @@
     <ClCompile Include="motionLogic\MotionRecognitionEngine.cpp" />
     <ClCompile Include="motionLogic\MotionTileGenerator.cpp" />
     <ClCompile Include="motionLogic\SkeletonDataTransmissor.cpp" />
+    <ClCompile Include="RendingPlugin\RendingPlugin.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -37,6 +38,7 @@
     <ClInclude Include="motionLogic\MotionRecognitionEngine.h" />
     <ClInclude Include="motionLogic\MotionTileGenerator.h" />
     <ClInclude Include="motionLogic\SkeletonDataTransmissor.h" />
+    <ClInclude Include="RendingPlugin\RendingPlugin.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -51,12 +53,14 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -70,7 +74,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(KINECTSDK10_DIR)\inc;$(KINECT_TOOLKIT_DIR)\inc;$(IncludePath)</IncludePath>
+    <IncludePath>$(KINECTSDK10_DIR)\inc;$(KINECT_TOOLKIT_DIR)\inc;$(ProjectDir);$(IncludePath)</IncludePath>
     <LibraryPath>$(KINECTSDK10_DIR)\lib\x86;$(KINECT_TOOLKIT_DIR)\lib\x86;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)$(Configuration)\</OutDir>
   </PropertyGroup>
@@ -91,7 +95,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Kinect10.lib;KinectBackgroundRemoval180_32.lib;KinectInteraction180_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Kinect10.lib;KinectBackgroundRemoval180_32.lib;KinectInteraction180_32.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
