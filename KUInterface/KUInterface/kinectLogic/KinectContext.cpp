@@ -2,6 +2,7 @@
 #include "KinectContext.h"
 #include <float.h>
 #include <assert.h>
+#include "CoordinateMapper.h"
 
 SensorContext::SensorContext()
 	: m_pNuiSensor(NULL)
@@ -411,6 +412,7 @@ HRESULT SensorContext::ProcessDepth(RUNTIME_RESULT *rtHr)
 	HRESULT bghr = S_OK;
 	if (IsBackgroundRemovedEnabled())
 	{
+		ProcessDepthForFullHead();
 		bghr = ProcessDepthInBackgroundRemoved(rtHr);
 	}
 	HRESULT iaHr = S_OK;
@@ -742,7 +744,7 @@ void SensorContext::DebugHandEventType(NUI_HAND_EVENT_TYPE t) const
 	printf("\n");
 }
 
-INuiSensor* SensorContext::GetSensor()
+INuiSensor* SensorContext::GetSensor() const
 {
 	return m_pNuiSensor;
 }
@@ -1064,6 +1066,95 @@ HRESULT SensorContext::ProcessAllBackgroundRemoved(RUNTIME_RESULT* rtHr /*= 0*/)
 		hr = ProcessBackgroundRemoved(bgItr->second, rtHr);
 	}
 	return hr;
+}
+
+void SensorContext::ProcessDepthForFullHead() const
+{
+	//深度值容易受到反光，或者头发(估计红外线不能有效反射)，或者距离太远等产生错误判断。
+	//所以要处理一下头发的景深数据。
+	const NUI_SKELETON_DATA* pSkDataArray = m_skeletonData.m_dataArray;
+	for (SkeletonIdMap::const_iterator itr = m_skeletonData.m_fullTrackedMap.begin();
+		itr != m_skeletonData.m_fullTrackedMap.end(); ++itr)
+	{
+		//ms在转深度坐标的时候，有个bug，api返回s_ok,但取到负数坐标。注意提防
+		if (pSkDataArray[itr->second].eSkeletonPositionTrackingState[NUI_SKELETON_POSITION_HEAD] != NUI_SKELETON_POSITION_TRACKED)
+			return;
+
+
+		//取得3点的位置，这三点无论人是在传感器面前是什么方向，
+		//取到MAX(肩膀宽度, 头到肩膀的高度）作为扫描区域的半径，区域是以头为中心的正方形，纠正头发的深度值
+		Vector4 headPos = pSkDataArray[itr->second].SkeletonPositions[NUI_SKELETON_POSITION_HEAD];
+		Vector4 shoulderLeftPos = pSkDataArray[itr->second].SkeletonPositions[NUI_SKELETON_POSITION_SHOULDER_LEFT];
+		Vector4 shoulderRightPos = pSkDataArray[itr->second].SkeletonPositions[NUI_SKELETON_POSITION_SHOULDER_RIGHT];
+
+		CoordinateMapper cdMaper(this);
+		NUI_DEPTH_IMAGE_POINT headDepthPoint = { 0 };
+		NUI_DEPTH_IMAGE_POINT shoulderLeftDepthPos = { 0 };
+		NUI_DEPTH_IMAGE_POINT shoulderRightDepthPoint = { 0 };
+
+		HRESULT hr1 = S_OK, hr2 = S_OK, hr3 = S_OK;
+		hr1 = cdMaper.MapSkeletonPointToDepthPoint(&headPos, &headDepthPoint);
+		hr2 = cdMaper.MapSkeletonPointToDepthPoint(&shoulderLeftPos, &shoulderLeftDepthPos);
+		hr3 = cdMaper.MapSkeletonPointToDepthPoint(&shoulderRightPos, &shoulderRightDepthPoint);
+
+		if (FAILED(hr1) || FAILED(hr2) || FAILED(hr3))
+		{
+			hr3 = hr3;
+		}
+
+		DWORD width = 0, height = 0;
+		m_depthData.GetSize(width, height);
+
+		//取到深度数据的用户id，注意这根骨架id是不同的。默认应该是从1到6，对应所能识别的最大人数
+		int depthIndex = 0;
+		if (IsDepthPointValid(headDepthPoint))
+		{
+			depthIndex = *((USHORT*)(m_depthData.m_pData + headDepthPoint.y * width * 4 + headDepthPoint.x * 4));
+		}
+		
+		if (depthIndex == 0 && IsDepthPointValid(shoulderLeftDepthPos))
+		{
+			depthIndex = *((USHORT*)(m_depthData.m_pData + shoulderLeftDepthPos.y * width * 4 + shoulderLeftDepthPos.x * 4));
+		}
+
+		if (depthIndex == 0 && IsDepthPointValid(shoulderRightDepthPoint))
+		{
+			depthIndex = *((USHORT*)(m_depthData.m_pData + shoulderRightDepthPoint.y * width * 4 + shoulderRightDepthPoint.x * 4));
+		}
+
+		if (depthIndex == 0)
+			return;
+
+		int rectRadius = max(std::abs(headDepthPoint.y - shoulderLeftDepthPos.y), 
+			std::abs(shoulderLeftDepthPos.x - shoulderRightDepthPoint.x));
+		
+		int top = max(headDepthPoint.y - rectRadius, 0);
+		int left = max(headDepthPoint.x - rectRadius, 0);
+		int bottom = min(headDepthPoint.y + rectRadius, height - 1);
+		int right = min(headDepthPoint.x + rectRadius, width - 1);
+
+		int k = 0;
+		for (int i = top; i <= bottom; ++i)
+		{
+			USHORT* ptr = (USHORT*)(m_depthData.m_pData + width * i * 4);
+			for (int j = left; j <= right; ++j)
+			{
+				k = j * 2;
+				if (ptr[k] == 0 && ptr[k + 1] == 0)
+				{
+					ptr[k] = depthIndex;
+					ptr[k + 1] = headDepthPoint.depth;
+				}
+			}
+		}
+	}
+}
+
+bool SensorContext::IsDepthPointValid(const NUI_DEPTH_IMAGE_POINT& point) const
+{
+	DWORD width = 0, height = 0;
+	m_depthData.GetSize(width, height);
+	return 0 <= point.x && point.x < width && 0 <= point.y && point.y < height;
 }
 
 KinectAdapter::KinectAdapter()

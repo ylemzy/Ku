@@ -161,7 +161,7 @@ public:
 	BOOL					IsInteractionEnabled() const;
 
 	HRESULT					SetInteractionCount(UINT peopelCount, RUNTIME_RESULT* rtHr);
-	INuiSensor*				GetSensor();
+	INuiSensor*				GetSensor() const;
 
 	const ColorData*		GetColorData() const;
 	const DepthData*		GetDepthData() const;
@@ -197,7 +197,7 @@ private:
 	void					ResetSkeletonData();
 	void					ResetBackgroundRemovedColorData();
 	void					ResetInteractionData();
-
+	bool					IsDepthPointValid(const NUI_DEPTH_IMAGE_POINT& point) const;
 
 	HRESULT					PickHandEventType(
 								const NUI_HANDPOINTER_INFO* pHandPointerInfo,
@@ -210,6 +210,7 @@ private:
 	bool					IsValidUseInfo(const NUI_USER_INFO* pUserInfo) const;
 
 	void					WriteFrameData(const FrameData* pData) const;
+	void					ProcessDepthForFullHead() const;
 public:
 	SkeletonData			m_skeletonData;
 	BOOL					m_bNearMode;
