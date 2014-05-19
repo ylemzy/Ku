@@ -7,6 +7,7 @@
 class SensorContext;
 class KN_DLL_CLASS CKinectWapper
 {
+
 public:
 	CKinectWapper();
 	~CKinectWapper();
@@ -51,16 +52,12 @@ public:
 	static const byte* NuiGetBackgroundRemovedComposed(OUT int* size);
 	static void NuiSetBackgroundRemovedComposed(bool bComposed);
 	static bool NuiIsBackgroundRemovedComposed();
-	static bool NuiGetBackgroundRemovedTexture(UINT trackedId, void* texture);
 
-private:
-	static void FillTextureFromCode(DWORD width, DWORD height, int stride, unsigned char* dst);
-	static bool RenderTexture(DWORD width, DWORD height, const byte* src, void* texture);
 	/*===============interaction-===========================*/
 public:
 	//开启用户信息，目前只有手势的grip(抓)， grip_release,另外通过手的坐标判断其他逻辑
 	static int NuiSetInteractionCount(UINT num);
-	static bool NuiGetUseInfo(UINT player, OUT SenLogic::KUseInfo* pLeftHand, OUT SenLogic::KUseInfo* pRightHand);
+	static bool NuiGetHandInfo(UINT player, bool bLeft, OUT SenLogic::KUseInfo* pHand);
 	static UINT NuiGetInteractionCount();
 	/*==============skeleton========================*/
 public:
@@ -83,19 +80,21 @@ public:
 
 	static void RunAngleTest();
 
-	/*=====================low-level rending=======================*/
+	static int BgColor(int i);
+	static int BgDepth(int i);
+	static int BgSk(int i);
+	static int BgBg(int i);
+
 public:
-	
-	static void UnityRenderEvent(int eventID);
-	static void SetTextureFromUnity (UINT trackedId, void* texturePtr);
-private:
-	static void DoRendering();
+	static DWORD WINAPI UpdateProc(IN LPVOID lpParameter);
+	static HANDLE StartProcessData();
+	static void StopProcessData();
 
 private:
 	static SensorContext* m_pNuiContext;
 	static SensorContext* Instance();
-	static int g_DeviceType;
-	static void* g_TexturePointer;
-	static UINT g_textureTrackId;
+
+	static HANDLE g_hThread;
+	static bool g_bStopThread;
 };
 #endif

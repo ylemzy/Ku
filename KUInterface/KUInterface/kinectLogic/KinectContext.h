@@ -124,7 +124,11 @@ private:
 
 class KN_DLL_CLASS SensorContext
 {
-	
+public:
+	int bgColor[2];
+	int bgDepth[2];
+	int bgSk[2];
+	int bgBg[2];
 public:
 	static const int		cBytesPerPixel = 4;
 
@@ -175,6 +179,7 @@ public:
 
 	void					SetBackgroundReomovedComposed(bool bCompose);
 	bool					IsBackgroundRemovedComposed();
+
 private:
 	HRESULT					ComposeBackgroundRemoved(UINT index);//数组下标
 	
