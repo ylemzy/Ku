@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)\KUInterface;$(KINECTSDK10_DIR)inc;$(KINECT_TOOLKIT_DIR)inc;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)\Debug;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)\Debug;$(KINECTSDK10_DIR)lib\x86;$(KINECT_TOOLKIT_DIR)lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -57,7 +57,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>Kinect.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Kinect.lib;KinectBackgroundRemoval180_32.lib;KinectInteraction180_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

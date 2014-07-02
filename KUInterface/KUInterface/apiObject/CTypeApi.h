@@ -15,6 +15,10 @@ C_TYPE_API int NuiUpdate();
 // 释放设备流
 C_TYPE_API void NuiUnInitContext();
 
+C_TYPE_API void StartProcess();
+
+C_TYPE_API void StopProcess();
+
 /*====================color========================*/
 C_TYPE_API void NuiGetColorResolution(int* width, int* height);
 
@@ -62,7 +66,7 @@ C_TYPE_API UINT NuiGetFullSkeletonCount();
 C_TYPE_API bool NuiExistPlayer();
 
 C_TYPE_API bool MapSkeletonToColor(Vector4 vec, int* x, int *y);
-
+C_TYPE_API bool NuiGetFloorClipPlane(OUT Vector4* vFloorClipPlane);
 /*===================camera=============================*/
 C_TYPE_API void NuiGetCameraAngle(OUT float* angle);
 C_TYPE_API bool NuiSetCameraAngle(int angle);

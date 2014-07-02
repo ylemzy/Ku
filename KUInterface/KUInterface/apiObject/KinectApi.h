@@ -3,7 +3,7 @@
 
 #include "..\stdafx.h"
 #include "..\RendingPlugin\RendingPlugin.h"
-
+#include <fstream>
 class SensorContext;
 class KN_DLL_CLASS CKinectWapper
 {
@@ -69,6 +69,7 @@ public:
 	static UINT NuiGetFullSkeletonCount();
 	// ÊÇ·ñ¼ì²âµ½Íæ¼Ò
 	static bool NuiExistPlayer();
+	static bool NuiGetFloorClipPlane(OUT Vector4* vFloorClipPlane);
 	/*===================camera=============================*/
 public:
 	static void NuiGetCameraAngle(OUT float* angle);
@@ -96,5 +97,9 @@ private:
 
 	static HANDLE g_hThread;
 	static bool g_bStopThread;
+	static ofstream* s;
+	static float a1;
+	static float b1;
+	static float c1;
 };
 #endif

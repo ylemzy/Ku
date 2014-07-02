@@ -1,5 +1,3 @@
-
-
 #include "stdafx.h"
 #include "KinectApi.h"
 #include "..\kinectLogic\KinectContext.h"
@@ -8,17 +6,16 @@
 #include "..\kinectLogic\CoordinateMapper.h"
 #include "..\RendingPlugin\RendingPlugin.h"
 
-
-
 SensorContext* CKinectWapper::m_pNuiContext = NULL;
 
 CKinectWapper::CKinectWapper()
 {
-
+	
 }
 
 CKinectWapper::~CKinectWapper()
 {
+	s->close();
 	NuiUnInitContext();
 }
 
@@ -34,8 +31,11 @@ int CKinectWapper::NuiInitContext(bool useColor, bool useDepth, bool useSkeleton
 
 	if (useSkeleton)
 		flag |= NUI_INITIALIZE_FLAG_USES_SKELETON;
-	Instance()->InitSensor(flag, &hr);
+	if (FAILED(Instance()->InitSensor(flag, &hr)))
+		hr = SUCCEEDED_FALSE;
 	printf("init ok\n");
+	s = new ofstream("to.txt");
+	s->clear();
 	return hr;
 }
 
@@ -57,22 +57,30 @@ int CKinectWapper::NuiUpdate()
 {
 	RUNTIME_RESULT rtColor = SUCCEEDED_OK, rtDepth = SUCCEEDED_OK, rtSk = SUCCEEDED_OK, rtBg = SUCCEEDED_OK, rtIa = SUCCEEDED_OK;
 	HRESULT hrColor = S_OK, hrDepth = S_OK, hrSk = S_OK, hrBg = S_OK, hrIa = S_OK;
-	if (Instance()->IsColorEnabled())
-		hrColor = Instance()->ProcessColor(&rtColor);
-	if (Instance()->IsDepthEnabled())
-		hrDepth = Instance()->ProcessDepth(&rtDepth);
-	if (Instance()->IsSkeletonEnabled())
-		hrSk = Instance()->ProcessSkeleton(&rtSk);
 
+	if (Instance()->IsColorEnabled() 
+		&& WAIT_OBJECT_0 == ::WaitForSingleObject(Instance()->GetColorData()->m_hEvent, 0))
+		hrColor = Instance()->ProcessColor(&rtColor);
+
+	if (Instance()->IsDepthEnabled() 
+		&& WAIT_OBJECT_0 == ::WaitForSingleObject(Instance()->GetDepthData()->m_hEvent, 0))
+		hrDepth = Instance()->ProcessDepth(&rtDepth);
+
+	if (Instance()->IsSkeletonEnabled()
+		&& WAIT_OBJECT_0 == ::WaitForSingleObject(Instance()->GetSkeletonData()->m_hEvent, 0))
+		hrSk = Instance()->ProcessSkeleton(&rtSk);
 	
 	if (Instance()->GetBackgroundRemovedCount() > 0)
 	{
 		Instance()->ProcessAllBackgroundRemoved(&rtBg);
 	}
-	if (Instance()->IsInteractionEnabled())
+
+	if (Instance()->IsInteractionEnabled()
+		&& WAIT_OBJECT_0 == ::WaitForSingleObject(Instance()->GetSkeletonData()->m_hEvent, 0))
 	{
 		hrIa = Instance()->ProcessInteraction(&rtIa);
 	}
+
 	//按顺序优先判断，骨架以及背景去除依赖于深度
 	if (FAILED(hrColor))
 	{
@@ -117,6 +125,7 @@ const byte* CKinectWapper::NuiGetDepthImage(OUT int* size)
 
 const byte* CKinectWapper::NuiGetBackgroundRemovedImage(UINT trackedId, OUT int* size)
 {
+	CriticalSectionScope scope(&Instance()->m_backGrmCriSec);
 	const BackGroudRemvoedData* pData = Instance()->GetBackgroundRemovedData(trackedId);
 	if (!pData)
 	{
@@ -131,6 +140,7 @@ const byte* CKinectWapper::NuiGetBackgroundRemovedImage(UINT trackedId, OUT int*
 
 bool CKinectWapper::NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4* SkeletonTransform)
 {
+	CriticalSectionScope scope(&Instance()->m_skeletonCriSec);
 	if (!SkeletonTransform)
 		return false;
 
@@ -146,17 +156,19 @@ bool CKinectWapper::NuiGetSkeletonTransform(UINT player, int joint, OUT Vector4*
 	const NUI_SKELETON_DATA* pData = pSkeletonData->GetSkeletonIndexByTrackedId(player);
 	if (!pData)
 		return false;
-	if (pData->eSkeletonPositionTrackingState[joint] != NUI_SKELETON_POSITION_NOT_TRACKED)
+	if (pData->eSkeletonPositionTrackingState[joint] == NUI_SKELETON_POSITION_TRACKED)
 	{
 		*SkeletonTransform = pData->SkeletonPositions[joint];
+		return true;
 	}
 	
 	//Instance()->TransformCoordinates(&skTrans);
-	return true;
+	return false;
 }
 
 bool CKinectWapper::NuiGetHandInfo(UINT player, bool bLeft, OUT SenLogic::KUseInfo* pHand)
 {
+	CriticalSectionScope scope(&Instance()->m_interActCriSec);
 	if ( pHand == NULL)
 		return false;
 
@@ -223,11 +235,13 @@ void CKinectWapper::NuiGetDepthImageSize(int* width, int* height)
 
 UINT CKinectWapper::NuiGetFullSkeletonCount()
 {
+	CriticalSectionScope scope(&Instance()->m_skeletonCriSec);
 	return Instance()->GetSkeletonData()->GetFullSkeletonCount();
 }
 
 bool CKinectWapper::NuiExistPlayer()
 {
+	CriticalSectionScope scope(&Instance()->m_skeletonCriSec);
 	return Instance()->GetSkeletonData()->GetSkeletonCount() > 0;
 }
 
@@ -244,7 +258,8 @@ bool CKinectWapper::NuiSetCameraAngle(int angle)
 		hr = Instance()->SetCameraAngle((long)angle);
 		if (FAILED(hr)) {
 			return false;
-		} else {
+		} 
+		else {
 			Instance()->nKinecAngle = (long)angle;
 			return true;
 		}
@@ -364,6 +379,7 @@ bool CKinectWapper::MapSkeletonToColor(Vector4 vec, int* x, int *y)
 
 UINT CKinectWapper::NuiGetBackgroundRemovedCount()
 {
+	CriticalSectionScope scope(&Instance()->m_backGrmCriSec);
 	return Instance()->GetBackgroundRemovedCount();
 }
 
@@ -390,6 +406,7 @@ bool CKinectWapper::NuiIsBackgroundRemovedComposed()
 
 UINT CKinectWapper::NuiGetInteractionCount()
 {
+	CriticalSectionScope scope(&Instance()->m_interActCriSec);
 	return Instance()->GetInteractionData()->GetCount();
 }
 
@@ -415,6 +432,7 @@ void CKinectWapper::GetDepthResolution(int* width, int* height)
 
 UINT CKinectWapper::NuiGetSkeletonId(UINT i)
 {
+	CriticalSectionScope scope(&Instance()->m_skeletonCriSec);
 	return Instance()->GetSkeletonData()->GetFullTrackedId(i);
 }
 
@@ -459,8 +477,39 @@ DWORD WINAPI CKinectWapper::UpdateProc(IN LPVOID lpParameter)
 	{
 		DWORD ret = ::WaitForMultipleObjects(eventVec.size(), eventVec.data(), FALSE, INFINITE);
 		NuiUpdate();
-		printf("%d %d", Instance()->bgSk[0] - Instance()->bgSk[1], Instance()->bgBg[0] - Instance()->bgBg[1]);
-		system("CLS");
+
+		if (NuiGetFullSkeletonCount() <= 0)
+		{
+			continue;
+		}
+		int id = NuiGetSkeletonId(0);
+		Vector4 footLeft;
+		Vector4 clip;
+		if (NuiGetSkeletonTransform(id, NUI_SKELETON_POSITION_FOOT_LEFT, &footLeft)
+			&& NuiGetFloorClipPlane(&clip) && clip.y != 0 && clip.z != 0 && clip.w != 0)
+		{
+			if (std::abs(footLeft.z * 100.0 - a1) < 0.001 &&
+				std::abs(footLeft.y * (-100) - b1) < 0.001 &&
+				std::abs(clip.w * 100 - c1) < 0.001)
+			{
+				a1 = footLeft.z * 100;
+				b1 = footLeft.y * (-100);
+				c1 = clip.w * 100;
+				continue;
+			}
+				
+			a1 = footLeft.z * 100;
+			b1 = footLeft.y * (-100);
+			c1 = clip.w * 100;
+			*s << a1 << " " << b1 << " " << c1 << endl;
+		}
+
+		/*printf("sk diff = %d\n", Instance()->bgSk[0] - Instance()->bgSk[1]);
+		printf("bg[%d, %d, %d]\n",
+			Instance()->bgBg[0],
+			Instance()->bgBg[1],
+			Instance()->bgBg[0] - Instance()->bgBg[1]);
+		system("CLS");*/
 	}
 	return S_OK;
 }
@@ -482,6 +531,23 @@ void CKinectWapper::StopProcessData()
 	g_bStopThread = true;
 }
 
+bool CKinectWapper::NuiGetFloorClipPlane(OUT Vector4* vFloorClipPlane)
+{
+	if (vFloorClipPlane == NULL)
+		return false;
+
+	CriticalSectionScope scope(&Instance()->m_skeletonCriSec);
+	*vFloorClipPlane = Instance()->GetSkeletonData()->GetFloorClipPlane();
+	return true;
+}
+
+float CKinectWapper::c1;
+
+float CKinectWapper::b1;
+
+float CKinectWapper::a1;
+
 bool CKinectWapper::g_bStopThread = true;
 
 HANDLE CKinectWapper::g_hThread = INVALID_HANDLE_VALUE;
+ofstream* CKinectWapper::s = NULL;

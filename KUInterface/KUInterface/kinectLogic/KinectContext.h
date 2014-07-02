@@ -37,11 +37,13 @@ public:
 	const NUI_SKELETON_DATA* GetSkeletonIndexByTrackedId(DWORD trackedId) const;
 	bool ExistFullTrackedID(DWORD trackedId) const;
 	NUI_SKELETON_DATA		m_dataArray[NUI_SKELETON_COUNT];
-	
+	Vector4 GetFloorClipPlane() const;
 	HANDLE					m_hEvent;
 	LARGE_INTEGER			m_timeStamp;
 	SkeletonIdMap		m_fullTrackedMap;
 	SkeletonIdMap		m_unFullTrackedMap;
+	Vector4 m_vFloorClipPlane;
+	Vector4 m_vNormalToGravity;
 };
 
 
@@ -129,6 +131,7 @@ public:
 	int bgDepth[2];
 	int bgSk[2];
 	int bgBg[2];
+	int m_lastId;
 public:
 	static const int		cBytesPerPixel = 4;
 
@@ -158,7 +161,7 @@ public:
 	HRESULT					SetSkeletonEnabled(BOOL bEnabled, RUNTIME_RESULT* rtHr);
 	HRESULT					SetBackgroundRemovedCount(UINT peopelCount, RUNTIME_RESULT* rtHr = 0);
 
-	BOOL					IsBackgroundRemovedEnabled() const;
+	BOOL					IsBackgroundRemovedEnabled();
 	BOOL					IsColorEnabled() const;
 	BOOL					IsDepthEnabled() const;
 	BOOL					IsSkeletonEnabled() const;
@@ -167,10 +170,12 @@ public:
 	HRESULT					SetInteractionCount(UINT peopelCount, RUNTIME_RESULT* rtHr);
 	INuiSensor*				GetSensor() const;
 
+	////////////需要外面保证线程安全，因为数据直接传给外面了,但内部是一个独立的线程，随时在更新数据/////////////////////////////
+public:
 	const ColorData*		GetColorData() const;
 	const DepthData*		GetDepthData() const;
-	UINT					GetSkeletonSize() const;
-	UINT					GetBackgroundRemovedCount() const;
+	UINT					GetSkeletonSize();
+	UINT					GetBackgroundRemovedCount();
 	const FrameData*		GetBackgroundRemovedComposed() const;
 	const BackGroudRemvoedData*		GetBackgroundRemovedData(UINT index) const;
 	const InteractionData*	GetInteractionData() const;
@@ -239,6 +244,33 @@ private:
 	//ofstream				myfile;
 
 	int personCount;
+
+public:
+	CRITICAL_SECTION m_colorCriSec;
+	CRITICAL_SECTION m_depthCriSec;
+	CRITICAL_SECTION m_skeletonCriSec;
+	CRITICAL_SECTION m_backGrmCriSec;
+	CRITICAL_SECTION m_interActCriSec;
+};
+
+class CriticalSectionScope
+{
+private:
+	CRITICAL_SECTION* m_criSec;
+public:
+	CriticalSectionScope(CRITICAL_SECTION* criSec)
+		: m_criSec(criSec)
+	{
+		if (m_criSec)
+			EnterCriticalSection(m_criSec);
+	}
+
+	~CriticalSectionScope()
+	{
+		if (m_criSec)
+			LeaveCriticalSection(m_criSec);
+		m_criSec = NULL;
+	}
 };
 
 class KinectAdapter: public INuiInteractionClient

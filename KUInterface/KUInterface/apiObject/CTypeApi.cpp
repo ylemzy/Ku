@@ -161,3 +161,18 @@ HANDLE NuiStartProcessThread()
 {
 	return CKinectWapper::StartProcessData();
 }
+
+void StartProcess()
+{
+	CKinectWapper::StartProcessData();
+}
+
+void StopProcess()
+{
+	CKinectWapper::StopProcessData();
+}
+
+bool NuiGetFloorClipPlane(OUT Vector4* vFloorClipPlane)
+{
+	return CKinectWapper::NuiGetFloorClipPlane(vFloorClipPlane);
+}
